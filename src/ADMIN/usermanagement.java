@@ -333,7 +333,7 @@ public class usermanagement extends JFrame {
                 jButton2ActionPerformed(evt);
             }
         });
-        jPanel1.add(jButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(420, 120, -1, 30));
+        jPanel1.add(jButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(407, 120, 130, 30));
 
         delete.setBackground(new java.awt.Color(35, 66, 106));
         delete.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N

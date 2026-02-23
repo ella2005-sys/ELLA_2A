@@ -26,9 +26,9 @@ public class admindashboard extends javax.swing.JFrame {
 
     // Sidebar Menu Buttons
     applyAdminButtonStyle(jButton1, navy); // Users
-    applyAdminButtonStyle(jButton2, navy); // Providers
-    applyAdminButtonStyle(jButton3, navy); // Appointments
-    applyAdminButtonStyle(jButton4, navy); // Reports
+    applyAdminButtonStyle(providers, navy); // Providers
+    applyAdminButtonStyle(appointments, navy); // Appointments
+    applyAdminButtonStyle(reports, navy); // Reports
     applyAdminButtonStyle(jButton7, navy); // Services
     applyAdminButtonStyle(jButton5, navy); // My Profile
 
@@ -84,9 +84,9 @@ for(javax.swing.JPanel card : cards) {
         jPanel1 = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
         jButton1 = new javax.swing.JButton();
-        jButton2 = new javax.swing.JButton();
-        jButton3 = new javax.swing.JButton();
-        jButton4 = new javax.swing.JButton();
+        providers = new javax.swing.JButton();
+        appointments = new javax.swing.JButton();
+        reports = new javax.swing.JButton();
         jButton5 = new javax.swing.JButton();
         jButton6 = new javax.swing.JButton();
         jButton7 = new javax.swing.JButton();
@@ -118,38 +118,38 @@ for(javax.swing.JPanel card : cards) {
         });
         jPanel2.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 210, 151, -1));
 
-        jButton2.setBackground(new java.awt.Color(35, 66, 106));
-        jButton2.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
-        jButton2.setForeground(new java.awt.Color(255, 255, 255));
-        jButton2.setText("Providers");
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
+        providers.setBackground(new java.awt.Color(35, 66, 106));
+        providers.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
+        providers.setForeground(new java.awt.Color(255, 255, 255));
+        providers.setText("Providers");
+        providers.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
+                providersActionPerformed(evt);
             }
         });
-        jPanel2.add(jButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 250, 151, -1));
+        jPanel2.add(providers, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 250, 151, -1));
 
-        jButton3.setBackground(new java.awt.Color(35, 66, 106));
-        jButton3.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
-        jButton3.setForeground(new java.awt.Color(255, 255, 255));
-        jButton3.setText("Appointments");
-        jButton3.addActionListener(new java.awt.event.ActionListener() {
+        appointments.setBackground(new java.awt.Color(35, 66, 106));
+        appointments.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
+        appointments.setForeground(new java.awt.Color(255, 255, 255));
+        appointments.setText("Appointments");
+        appointments.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton3ActionPerformed(evt);
+                appointmentsActionPerformed(evt);
             }
         });
-        jPanel2.add(jButton3, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 290, 150, -1));
+        jPanel2.add(appointments, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 290, 150, -1));
 
-        jButton4.setBackground(new java.awt.Color(35, 66, 106));
-        jButton4.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
-        jButton4.setForeground(new java.awt.Color(255, 255, 255));
-        jButton4.setText("Reports");
-        jButton4.addActionListener(new java.awt.event.ActionListener() {
+        reports.setBackground(new java.awt.Color(35, 66, 106));
+        reports.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
+        reports.setForeground(new java.awt.Color(255, 255, 255));
+        reports.setText("Reports");
+        reports.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton4ActionPerformed(evt);
+                reportsActionPerformed(evt);
             }
         });
-        jPanel2.add(jButton4, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 330, 150, -1));
+        jPanel2.add(reports, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 330, 150, -1));
 
         jButton5.setBackground(new java.awt.Color(35, 66, 106));
         jButton5.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
@@ -306,20 +306,35 @@ for(javax.swing.JPanel card : cards) {
         this.dispose();
     }//GEN-LAST:event_jButton7ActionPerformed
 
-    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jButton3ActionPerformed
+    private void appointmentsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_appointmentsActionPerformed
+        Appointments appt = new Appointments();
+    
+    // Make it show up on screen
+    appt.setVisible(true);
+    
+    // Center it so it doesn't appear in the corner
+    appt.setLocationRelativeTo(null); 
+    
+    // Close the current dashboard
+    this.dispose();
+    }//GEN-LAST:event_appointmentsActionPerformed
 
-    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jButton4ActionPerformed
+    private void reportsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_reportsActionPerformed
+     try {
+        reports rpt = new reports(); 
+        rpt.setVisible(true); 
+        this.dispose(); 
+    } catch (Exception e) {
+        // This will tell you EXACTLY why it's glitching in the output console
+        javax.swing.JOptionPane.showMessageDialog(null, "Error opening Reports: " + e.getMessage());
+    }
+    }//GEN-LAST:event_reportsActionPerformed
 
-    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-       ServiceManagement sm = new ServiceManagement();
-    sm.setVisible(true);
-    sm.setLocationRelativeTo(null); // Centers the new window
-    this.dispose(); // Closes the current dashboard
-    }//GEN-LAST:event_jButton2ActionPerformed
+    private void providersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_providersActionPerformed
+      Providers prov = new Providers();
+    prov.setVisible(true);
+    this.dispose();
+    }//GEN-LAST:event_providersActionPerformed
 
     /**
      * @param args the command line arguments
@@ -360,10 +375,8 @@ for(javax.swing.JPanel card : cards) {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton appointments;
     private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
-    private javax.swing.JButton jButton3;
-    private javax.swing.JButton jButton4;
     private javax.swing.JButton jButton5;
     private javax.swing.JButton jButton6;
     private javax.swing.JButton jButton7;
@@ -377,5 +390,7 @@ for(javax.swing.JPanel card : cards) {
     private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel5;
     private javax.swing.JPanel jPanel6;
+    private javax.swing.JButton providers;
+    private javax.swing.JButton reports;
     // End of variables declaration//GEN-END:variables
 }
