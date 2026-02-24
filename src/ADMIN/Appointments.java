@@ -20,8 +20,11 @@ public class Appointments extends javax.swing.JFrame {
     setupTable();
     displayAllAppointments(); // Fill the table with all bookings
     
-    // Apply your consistent ghost-button style
-    applyCustomButtonStyle(jButton1);
+    
+    
+    java.awt.Color navy = new java.awt.Color(35, 66, 106);
+    java.awt.Color logoutBrown = new java.awt.Color(106, 75, 35);
+      applyAdminButtonStyle(jButton1, navy); 
     }
 
     public void displayAllAppointments() {
@@ -65,25 +68,27 @@ private void setupTable() {
     jTable1.getTableHeader().setForeground(java.awt.Color.WHITE);
 }
 
-private void applyCustomButtonStyle(javax.swing.JButton btn) {
-        btn.setBorderPainted(true);
-        btn.setFocusPainted(false);
-        btn.setContentAreaFilled(false);
-        btn.setOpaque(false);
-        btn.setForeground(java.awt.Color.WHITE);
-        btn.setBorder(javax.swing.BorderFactory.createLineBorder(java.awt.Color.WHITE, 1));
-        btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-
-        btn.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                btn.setOpaque(true);
-                btn.setBackground(new java.awt.Color(255, 255, 255, 40));
-            }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                btn.setOpaque(false);
-            }
-        });
-    }
+private void applyAdminButtonStyle(javax.swing.JButton btn, java.awt.Color baseColor) {
+    btn.setBorderPainted(false);
+    btn.setFocusPainted(false);
+    btn.setContentAreaFilled(false); 
+    btn.setOpaque(true); 
+    btn.setBackground(baseColor);
+    btn.setForeground(java.awt.Color.WHITE);
+    btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+    btn.setFont(new java.awt.Font("Segoe UI Semibold", java.awt.Font.PLAIN, 14));
+    
+    btn.addMouseListener(new java.awt.event.MouseAdapter() {
+        @Override
+        public void mouseEntered(java.awt.event.MouseEvent evt) {
+            btn.setBackground(baseColor.brighter()); 
+        }
+        @Override
+        public void mouseExited(java.awt.event.MouseEvent evt) {
+            btn.setBackground(baseColor);
+        }
+    });
+}
     
     
     @SuppressWarnings("unchecked")
@@ -136,7 +141,7 @@ private void applyCustomButtonStyle(javax.swing.JButton btn) {
         ));
         jScrollPane1.setViewportView(jTable1);
 
-        jPanel1.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(371, 195, -1, 263));
+        jPanel1.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(371, 195, 560, 263));
 
         jPanel3.setBackground(new java.awt.Color(35, 66, 106));
 
@@ -148,10 +153,10 @@ private void applyCustomButtonStyle(javax.swing.JButton btn) {
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel3Layout.createSequentialGroup()
-                .addContainerGap()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
+                .addContainerGap(80, Short.MAX_VALUE)
                 .addComponent(jLabel2)
-                .addContainerGap(19, Short.MAX_VALUE))
+                .addGap(59, 59, 59))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -161,17 +166,21 @@ private void applyCustomButtonStyle(javax.swing.JButton btn) {
                 .addContainerGap(31, Short.MAX_VALUE))
         );
 
-        jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(371, 28, 452, -1));
+        jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(371, 28, 560, -1));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 901, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 979, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 596, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
         );
 
         pack();

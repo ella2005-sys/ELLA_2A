@@ -12,9 +12,15 @@ public class Providers extends javax.swing.JFrame {
     public Providers() {
         initComponents();
         setupTable();
-        applyCustomButtonStyle(jButton1); // The "Back to Home" style
+         // Users// The "Back to Home" style
         setLocationRelativeTo(null);
         displayProviders();
+        
+         java.awt.Color navy = new java.awt.Color(35, 66, 106);
+    java.awt.Color logoutBrown = new java.awt.Color(106, 75, 35);
+        applyAdminButtonStyle(jButton1, navy); 
+        
+         
     }
 
     
@@ -29,25 +35,27 @@ public class Providers extends javax.swing.JFrame {
         jTable1.getTableHeader().setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
     }
     
-    private void applyCustomButtonStyle(javax.swing.JButton btn) {
-        btn.setBorderPainted(true);
-        btn.setFocusPainted(false);
-        btn.setContentAreaFilled(false);
-        btn.setOpaque(false);
-        btn.setForeground(java.awt.Color.WHITE);
-        btn.setBorder(javax.swing.BorderFactory.createLineBorder(java.awt.Color.WHITE, 1));
-        btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-
-        btn.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                btn.setOpaque(true);
-                btn.setBackground(new java.awt.Color(255, 255, 255, 40));
-            }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                btn.setOpaque(false);
-            }
-        });
-    }
+      private void applyAdminButtonStyle(javax.swing.JButton btn, java.awt.Color baseColor) {
+    btn.setBorderPainted(false);
+    btn.setFocusPainted(false);
+    btn.setContentAreaFilled(false); 
+    btn.setOpaque(true); 
+    btn.setBackground(baseColor);
+    btn.setForeground(java.awt.Color.WHITE);
+    btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+    btn.setFont(new java.awt.Font("Segoe UI Semibold", java.awt.Font.PLAIN, 14));
+    
+    btn.addMouseListener(new java.awt.event.MouseAdapter() {
+        @Override
+        public void mouseEntered(java.awt.event.MouseEvent evt) {
+            btn.setBackground(baseColor.brighter()); 
+        }
+        @Override
+        public void mouseExited(java.awt.event.MouseEvent evt) {
+            btn.setBackground(baseColor);
+        }
+    });
+}
     
     public void displayProviders() {
     try {

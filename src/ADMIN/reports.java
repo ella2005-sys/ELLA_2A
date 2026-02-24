@@ -7,6 +7,7 @@ import java.text.MessageFormat;
 import javax.swing.JTable;
 
 
+
 public class reports extends javax.swing.JFrame {
 
      config cfg = new config();
@@ -15,24 +16,28 @@ public class reports extends javax.swing.JFrame {
         setLocationRelativeTo(null);
     setupTable();
     
-    applyCustomButtonStyle(jButton1);
+    java.awt.Color navy = new java.awt.Color(35, 66, 106);
+    java.awt.Color logoutBrown = new java.awt.Color(106, 75, 35);
+     applyAdminButtonStyle(jButton1, navy); // Users
+     applyAdminButtonStyle(print, navy); // Users
     displayReports();
+    
+    
     }
-
-public void displayReports() {
+  
+    public void displayReports() {
     try {
-        CONFIG.config cfg = new CONFIG.config();
         java.sql.Connection conn = cfg.getConnection();
-        
-        // This query gets the ID and Stats from bookings, 
-        // then 'looks up' the name from services using the ID.
-        String sql = "SELECT b.s_id, " +
-                     "(SELECT s_name FROM tbl_services WHERE s_id = b.s_id) AS service_name, " +
-                     "COUNT(b.b_id) AS times_booked, " +
-                     "SUM(b.b_total) AS total_revenue " +
-                     "FROM tbl_bookings b " +
-                     "GROUP BY b.s_id";
-        
+
+        // We use [ s_id] because your scan showed a leading space in the column name
+        // We also use [tbl_services] and [tbl_bookings] to be safe
+        String sql = "SELECT ts.[ s_id], ts.s_name, " +
+                     "COUNT(tb.b_id) AS total_booked, " +
+                     "SUM(CASE WHEN tb.b_total IS NULL THEN 0 ELSE tb.b_total END) AS total_revenue " +
+                     "FROM tbl_services ts " +
+                     "LEFT JOIN tbl_bookings tb ON ts.[ s_id] = tb.s_id " +
+                     "GROUP BY ts.[ s_id], ts.s_name";
+
         java.sql.PreparedStatement pst = conn.prepareStatement(sql);
         java.sql.ResultSet rs = pst.executeQuery();
 
@@ -40,12 +45,11 @@ public void displayReports() {
         model.setRowCount(0); 
 
         while (rs.next()) {
-            // We pull 4 columns now: ID, Name, Count, and Revenue
             model.addRow(new Object[]{
-                rs.getString("s_id"),           // ID
-                rs.getString("service_name"),   // The Name (e.g. "Full Service")
-                rs.getString("times_booked"),   // Count
-                "₱" + String.format("%.2f", rs.getDouble("total_revenue")) // Money
+                rs.getInt(1),                                // ID
+                rs.getString(2),                             // Name
+                rs.getInt(3),                                // Booked Count
+                "₱" + String.format("%.2f", rs.getDouble(4)) // Revenue
             });
         }
         
@@ -53,10 +57,13 @@ public void displayReports() {
         pst.close();
         conn.close();
     } catch (Exception e) {
-        System.out.println("DATABASE ERROR: " + e.getMessage());
+        e.printStackTrace();
+        javax.swing.JOptionPane.showMessageDialog(null, "Database Error: " + e.getMessage());
     }
 }
-
+ 
+    
+    
 private void setupTable() {
     String[] headers = {"Service ID", "Service Name", "Times Booked", "Total Revenue"};
     jTable1.setModel(new javax.swing.table.DefaultTableModel(null, headers));
@@ -67,25 +74,27 @@ private void setupTable() {
     jTable1.getTableHeader().setForeground(java.awt.Color.WHITE);
 }
 
- private void applyCustomButtonStyle(javax.swing.JButton btn) {
-        btn.setBorderPainted(true);
-        btn.setFocusPainted(false);
-        btn.setContentAreaFilled(false);
-        btn.setOpaque(false);
-        btn.setForeground(java.awt.Color.WHITE);
-        btn.setBorder(javax.swing.BorderFactory.createLineBorder(java.awt.Color.WHITE, 1));
-        btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-
-        btn.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                btn.setOpaque(true);
-                btn.setBackground(new java.awt.Color(255, 255, 255, 40));
-            }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                btn.setOpaque(false);
-            }
-        });
-    }
+ private void applyAdminButtonStyle(javax.swing.JButton btn, java.awt.Color baseColor) {
+    btn.setBorderPainted(false);
+    btn.setFocusPainted(false);
+    btn.setContentAreaFilled(false); 
+    btn.setOpaque(true); 
+    btn.setBackground(baseColor);
+    btn.setForeground(java.awt.Color.WHITE);
+    btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+    btn.setFont(new java.awt.Font("Segoe UI Semibold", java.awt.Font.PLAIN, 14));
+    
+    btn.addMouseListener(new java.awt.event.MouseAdapter() {
+        @Override
+        public void mouseEntered(java.awt.event.MouseEvent evt) {
+            btn.setBackground(baseColor.brighter()); 
+        }
+        @Override
+        public void mouseExited(java.awt.event.MouseEvent evt) {
+            btn.setBackground(baseColor);
+        }
+    });
+}
  
  private void printBtnActionPerformed(java.awt.event.ActionEvent evt) {                                         
     // This creates the professional header and footer for your printed page
@@ -233,10 +242,23 @@ private void setupTable() {
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void printActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_printActionPerformed
-        // This creates the connection between the dashboard and the reports frame
-    reports rpt = new reports(); 
-    rpt.setVisible(true); // Makes the reports window appear
-    this.dispose();       // Closes the dashboard so only one window is open
+      // 1. Create the professional header and footer
+    MessageFormat header = new MessageFormat("LocalHelper - Service Revenue Report");
+    MessageFormat footer = new MessageFormat("Page {0,number,integer}");
+    
+    try {
+        // 2. This command opens the system print dialog and formats your table
+        // FIT_WIDTH ensures the table doesn't get cut off on the paper
+        boolean complete = jTable1.print(JTable.PrintMode.FIT_WIDTH, header, footer);
+        
+        if (complete) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Printing Complete!", "Printer", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            System.out.println("Printing Cancelled");
+        }
+    } catch (java.awt.print.PrinterException e) {
+        javax.swing.JOptionPane.showMessageDialog(this, "Printer Error: " + e.getMessage());
+    }      // Closes the dashboard so only one window is open
     }//GEN-LAST:event_printActionPerformed
 
     /**
