@@ -10,6 +10,7 @@ public class BookingForm extends javax.swing.JFrame {
     
     public BookingForm(int serviceId, String serviceName, double price) {
     initComponents();
+    new CONFIG.config().sessionGuard(this);
    this.selectedServiceId = serviceId; // Save the ID passed from the dashboard
     this.selectedServicePrice = price;
 
@@ -249,8 +250,13 @@ private void styleBookingButton(javax.swing.JButton btn, java.awt.Color bg) {
 
     java.awt.EventQueue.invokeLater(new Runnable() {
         public void run() {
-            // Pass dummy values: 0 for ID, "Test" for Name, 0.0 for Price
-            new BookingForm(0, "Test Service", 0.0).setVisible(true);
+            if (!CONFIG.Session.isLoggedIn()) {
+                javax.swing.JOptionPane.showMessageDialog(null, "Please log in to book a service.");
+                new MAIN.login().setVisible(true);
+            } else {
+                // If running directly for test, it uses placeholders
+                new BookingForm(0, "Test Service", 0.0).setVisible(true);
+            }
         }
     });
 }

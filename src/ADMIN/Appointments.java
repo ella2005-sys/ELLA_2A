@@ -16,6 +16,7 @@ public class Appointments extends javax.swing.JFrame {
    
     public Appointments() {
         initComponents();
+        new CONFIG.config().sessionGuard(this);
         setLocationRelativeTo(null);
     setupTable();
     displayAllAppointments(); // Fill the table with all bookings
@@ -195,37 +196,33 @@ private void applyAdminButtonStyle(javax.swing.JButton btn, java.awt.Color baseC
     /**
      * @param args the command line arguments
      */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(Appointments.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(Appointments.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(Appointments.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(Appointments.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
+   public static void main(String args[]) {
+    // ... (Keep your existing Look and Feel try-catch block here) ...
 
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
+    /* Create and display the form */
+    java.awt.EventQueue.invokeLater(new Runnable() {
+        public void run() {
+            // Check if user is logged in using your Session class logic
+            if (!CONFIG.Session.isLoggedIn()) {
+                javax.swing.JOptionPane.showMessageDialog(
+                    null, 
+                    "Please Login First!", 
+                    "Access Denied", 
+                    javax.swing.JOptionPane.ERROR_MESSAGE
+                );
+
+                // Redirect to login
+                MAIN.login loginFrame = new MAIN.login();
+                loginFrame.setVisible(true);
+                loginFrame.pack();
+                loginFrame.setLocationRelativeTo(null);
+            } else {
+                // If logged in, show the Appointments window
                 new Appointments().setVisible(true);
             }
-        });
-    }
+        }
+    });
+}
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButton1;

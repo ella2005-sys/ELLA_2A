@@ -12,18 +12,24 @@ public class AddService extends javax.swing.JFrame {
 
     
    public AddService() {
-        initComponents();
-        jTextField1.setEnabled(false);
-        jTextField1.setText("Auto"); 
-    }
+    // Check session before anything else
+    new CONFIG.config().sessionGuard(this);
+    
+    initComponents();
+    jTextField1.setEnabled(false);
+    jTextField1.setText("Auto"); 
+}
 
-    // Provider constructor
-    public AddService(int providerId) {
-        initComponents();
-        this.providerId = providerId;
-        jTextField1.setEnabled(false);
-        jTextField1.setText("Auto"); 
-    }
+// Provider constructor
+public AddService(int providerId) {
+    // Check session before anything else
+    new CONFIG.config().sessionGuard(this);
+    
+    initComponents();
+    this.providerId = providerId;
+    jTextField1.setEnabled(false);
+    jTextField1.setText("Auto"); 
+}
 
     
     @SuppressWarnings("unchecked")
@@ -206,36 +212,32 @@ public class AddService extends javax.swing.JFrame {
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(AddService.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(AddService.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(AddService.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(AddService.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
+    // ... (Keep the Look and Feel try-catch block as is) ...
 
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
+    /* Create and display the form */
+    java.awt.EventQueue.invokeLater(new Runnable() {
+        public void run() {
+            // Check if user is logged in using your Session class
+            if (!CONFIG.Session.isLoggedIn()) {
+                javax.swing.JOptionPane.showMessageDialog(
+                    null, 
+                    "Please Login First!", 
+                    "Access Denied", 
+                    javax.swing.JOptionPane.ERROR_MESSAGE
+                );
+                
+                // Redirect to login
+                MAIN.login loginFrame = new MAIN.login();
+                loginFrame.setVisible(true);
+                loginFrame.pack();
+                loginFrame.setLocationRelativeTo(null);
+            } else {
+                // User is logged in, safe to show the form
                 new AddService().setVisible(true);
             }
-        });
-    }
+        }
+    });
+}
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton Cancel;
