@@ -46,16 +46,58 @@ public class admindashboard extends javax.swing.JFrame {
     applyAdminButtonStyle(jButton6, logoutBrown);
     
     // Header Style (Optional but recommended)
-    jPanel3.setBorder(javax.swing.BorderFactory.createMatteBorder(0, 0, 4, 0, logoutBrown));
     
-    recentActivityTable.getTableHeader().setBackground(new java.awt.Color(35, 66, 106)); // Navy header
-recentActivityTable.getTableHeader().setForeground(java.awt.Color.WHITE);
-recentActivityTable.setRowHeight(25);
-recentActivityTable.setShowGrid(false);
-recentActivityTable.setIntercellSpacing(new java.awt.Dimension(0, 0));
+    recentActivityTable.getTableHeader().setBackground(new java.awt.Color(250, 250, 250));
+    recentActivityTable.getTableHeader().setForeground(new java.awt.Color(120, 120, 120)); // Soft gray text
+    recentActivityTable.getTableHeader().setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
+    recentActivityTable.getTableHeader().setBorder(javax.swing.BorderFactory.createMatteBorder(0, 0, 1, 0, new java.awt.Color(235, 235, 235)));
+
+// Style the Header
+    recentActivityTable.getTableHeader().setBackground(new java.awt.Color(248, 249, 250)); // Very light gray
+    recentActivityTable.getTableHeader().setForeground(new java.awt.Color(35, 66, 106)); // Deep Navy
+    recentActivityTable.getTableHeader().setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
+    recentActivityTable.getTableHeader().setBorder(javax.swing.BorderFactory.createMatteBorder(0, 0, 1, 0, new java.awt.Color(230, 230, 230)));
     
     
     
+     // Inside public admindashboard() { ... }
+
+     recentActivityTable.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+    @Override
+    public void mouseMoved(java.awt.event.MouseEvent e) {
+        int row = recentActivityTable.rowAtPoint(e.getPoint());
+        if (row > -1) {
+            // This highlights the row under the mouse
+            recentActivityTable.setRowSelectionInterval(row, row);
+            recentActivityTable.setSelectionBackground(new java.awt.Color(245, 248, 255)); // Very light blue tint
+        }
+    }
+});
+
+    // Add this as a NEW CLASS inside your admindashboard.java file
+    class StatusRenderer extends javax.swing.table.DefaultTableCellRenderer {
+    @Override
+    public java.awt.Component getTableCellRendererComponent(javax.swing.JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+        javax.swing.JLabel label = (javax.swing.JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        
+        label.setHorizontalAlignment(javax.swing.JLabel.CENTER);
+        label.setOpaque(true);
+        
+        // Match the colors from the reference image
+        if ("Approved".equals(value)) {
+            label.setBackground(new java.awt.Color(220, 255, 240)); // Light Green bubble
+            label.setForeground(new java.awt.Color(0, 150, 70));    // Dark Green text
+        } else if ("Pending".equals(value)) {
+            label.setBackground(new java.awt.Color(255, 245, 210)); // Light Orange bubble
+            label.setForeground(new java.awt.Color(200, 120, 0));   // Dark Orange text
+        }
+        
+        // Create the "Pill" shape using a border
+        label.setBorder(javax.swing.BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        
+        return label;
+    }
+}
 
     }
     
@@ -88,45 +130,39 @@ recentActivityTable.setIntercellSpacing(new java.awt.Dimension(0, 0));
     });
 }
     
-  private void setupCard(javax.swing.JPanel card, String title, javax.swing.JLabel countLabel) {
-    // We clear the AbsoluteLayout from the designer to use a clean BorderLayout
-    card.removeAll(); 
-    card.setLayout(new java.awt.BorderLayout(0, 10)); // 10px gap
+ private void setupCard(javax.swing.JPanel card, String title, javax.swing.JLabel countLabel) {
+    card.removeAll();
+    card.setLayout(new java.awt.BorderLayout(0, 5));
     
-    // 1. Create the title label (The words you want to see!)
+    // Add a slight rounded border look if you aren't using a custom Panel class
+    card.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(255,255,255, 50), 1));
+    
+    // Title Styling
     javax.swing.JLabel titleLbl = new javax.swing.JLabel(title);
-    titleLbl.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 14));
-    titleLbl.setForeground(java.awt.Color.WHITE); 
+    titleLbl.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12)); // Slightly smaller
+    titleLbl.setForeground(new java.awt.Color(255, 255, 255, 200)); // Semi-transparent white
     titleLbl.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-    // Add some padding to the top
-    titleLbl.setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 0, 0, 0));
+    titleLbl.setBorder(javax.swing.BorderFactory.createEmptyBorder(15, 0, 0, 0));
     
-    // 2. Style the countLabel (which holds your icon and number)
-    countLabel.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 24));
+    // Count Styling
+    countLabel.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 32)); // Bigger number
     countLabel.setForeground(java.awt.Color.WHITE);
-    countLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-    // Move text to the right of the icon if you want both visible
-    countLabel.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-    countLabel.setIconTextGap(20); 
-
-    // 3. Re-add them to the card
+    
     card.add(titleLbl, java.awt.BorderLayout.NORTH);
     card.add(countLabel, java.awt.BorderLayout.CENTER);
     
-    // 4. ADD THE HOVER EFFECT DESIGN HERE
+    // Improved Hover Effect (Subtle glow instead of just bright)
     java.awt.Color originalColor = card.getBackground();
     card.addMouseListener(new java.awt.event.MouseAdapter() {
         @Override
         public void mouseEntered(java.awt.event.MouseEvent evt) {
             card.setBackground(originalColor.brighter());
-            card.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         }
         @Override
         public void mouseExited(java.awt.event.MouseEvent evt) {
             card.setBackground(originalColor);
         }
     });
-
     card.revalidate();
     card.repaint();
 }
@@ -194,6 +230,27 @@ recentActivityTable.setIntercellSpacing(new java.awt.Dimension(0, 0));
         System.out.println("Table Error: " + e.getMessage());
     }
 }
+   
+   public class StatusCellRenderer extends javax.swing.table.DefaultTableCellRenderer {
+    @Override
+    public java.awt.Component getTableCellRendererComponent(javax.swing.JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+        javax.swing.JLabel label = (javax.swing.JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        label.setHorizontalAlignment(javax.swing.JLabel.CENTER);
+        
+        // Colors for different statuses
+        if ("Approved".equals(value)) {
+            label.setForeground(new java.awt.Color(46, 204, 113)); // Green text
+            label.setText("● Approved");
+        } else if ("Pending".equals(value)) {
+            label.setForeground(new java.awt.Color(241, 196, 15)); // Yellow text
+            label.setText("● Pending");
+        }
+        
+        return label;
+    }
+}
+   
+   
 
     
     
@@ -219,8 +276,6 @@ recentActivityTable.setIntercellSpacing(new java.awt.Dimension(0, 0));
         jLabel2 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
         jLabel_Welcome = new javax.swing.JLabel();
-        jPanel3 = new javax.swing.JPanel();
-        jLabel1 = new javax.swing.JLabel();
         userCountLabel = new javax.swing.JPanel();
         p = new javax.swing.JLabel();
         providerCountLabel = new javax.swing.JPanel();
@@ -231,6 +286,7 @@ recentActivityTable.setIntercellSpacing(new java.awt.Dimension(0, 0));
         jLabel5 = new javax.swing.JLabel();
         jScrollPane1 = new javax.swing.JScrollPane();
         recentActivityTable = new javax.swing.JTable();
+        jLabel1 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -249,7 +305,7 @@ recentActivityTable.setIntercellSpacing(new java.awt.Dimension(0, 0));
                 jButton1ActionPerformed(evt);
             }
         });
-        jPanel2.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 260, 151, -1));
+        jPanel2.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 230, 151, -1));
 
         providers.setBackground(new java.awt.Color(35, 66, 106));
         providers.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
@@ -260,7 +316,7 @@ recentActivityTable.setIntercellSpacing(new java.awt.Dimension(0, 0));
                 providersActionPerformed(evt);
             }
         });
-        jPanel2.add(providers, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 300, 151, -1));
+        jPanel2.add(providers, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 270, 151, -1));
 
         appointments.setBackground(new java.awt.Color(35, 66, 106));
         appointments.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
@@ -271,7 +327,7 @@ recentActivityTable.setIntercellSpacing(new java.awt.Dimension(0, 0));
                 appointmentsActionPerformed(evt);
             }
         });
-        jPanel2.add(appointments, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 340, 150, -1));
+        jPanel2.add(appointments, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 310, 150, -1));
 
         reports.setBackground(new java.awt.Color(35, 66, 106));
         reports.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
@@ -282,7 +338,7 @@ recentActivityTable.setIntercellSpacing(new java.awt.Dimension(0, 0));
                 reportsActionPerformed(evt);
             }
         });
-        jPanel2.add(reports, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 380, 150, -1));
+        jPanel2.add(reports, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 350, 150, -1));
 
         jButton5.setBackground(new java.awt.Color(35, 66, 106));
         jButton5.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
@@ -293,7 +349,7 @@ recentActivityTable.setIntercellSpacing(new java.awt.Dimension(0, 0));
                 jButton5ActionPerformed(evt);
             }
         });
-        jPanel2.add(jButton5, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 460, 150, -1));
+        jPanel2.add(jButton5, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 430, 150, -1));
 
         jButton6.setBackground(new java.awt.Color(102, 204, 255));
         jButton6.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
@@ -304,7 +360,7 @@ recentActivityTable.setIntercellSpacing(new java.awt.Dimension(0, 0));
                 jButton6ActionPerformed(evt);
             }
         });
-        jPanel2.add(jButton6, new org.netbeans.lib.awtextra.AbsoluteConstraints(100, 540, 100, -1));
+        jPanel2.add(jButton6, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 520, 100, -1));
 
         jButton7.setBackground(new java.awt.Color(35, 66, 106));
         jButton7.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
@@ -315,48 +371,24 @@ recentActivityTable.setIntercellSpacing(new java.awt.Dimension(0, 0));
                 jButton7ActionPerformed(evt);
             }
         });
-        jPanel2.add(jButton7, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 420, 150, -1));
+        jPanel2.add(jButton7, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 390, 150, -1));
 
         jLabel2.setFont(new java.awt.Font("Segoe UI Black", 0, 15)); // NOI18N
         jLabel2.setForeground(new java.awt.Color(255, 255, 255));
         jLabel2.setText("MENU");
-        jPanel2.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(120, 220, -1, -1));
+        jPanel2.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(110, 200, -1, -1));
 
         jLabel3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/IMAGES/Blue White Modern Minimalist Interior Designer Personal Branding Logo(1)(1).jpg"))); // NOI18N
-        jPanel2.add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 20, -1, 80));
+        jPanel2.add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 20, -1, 80));
 
         jLabel_Welcome.setFont(new java.awt.Font("Segoe UI Black", 0, 18)); // NOI18N
         jLabel_Welcome.setForeground(new java.awt.Color(204, 255, 255));
         jLabel_Welcome.setText("Welcome, ");
-        jPanel2.add(jLabel_Welcome, new org.netbeans.lib.awtextra.AbsoluteConstraints(90, 130, 130, -1));
+        jPanel2.add(jLabel_Welcome, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 130, 130, -1));
 
-        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 290, 600));
+        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 10, 260, 560));
 
-        jPanel3.setBackground(new java.awt.Color(35, 66, 106));
-
-        jLabel1.setFont(new java.awt.Font("Segoe UI Black", 0, 36)); // NOI18N
-        jLabel1.setForeground(new java.awt.Color(255, 255, 255));
-        jLabel1.setText("ADMIN DASHBOARD");
-
-        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
-        jPanel3.setLayout(jPanel3Layout);
-        jPanel3Layout.setHorizontalGroup(
-            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel3Layout.createSequentialGroup()
-                .addGap(29, 29, 29)
-                .addComponent(jLabel1)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
-        jPanel3Layout.setVerticalGroup(
-            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel3Layout.createSequentialGroup()
-                .addComponent(jLabel1)
-                .addGap(0, 0, Short.MAX_VALUE))
-        );
-
-        jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 30, 440, 50));
-
-        userCountLabel.setBackground(new java.awt.Color(183, 65, 13));
+        userCountLabel.setBackground(new java.awt.Color(255, 111, 94));
         userCountLabel.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         p.setIcon(new javax.swing.ImageIcon(getClass().getResource("/IMAGES/user (4).png"))); // NOI18N
@@ -364,7 +396,7 @@ recentActivityTable.setIntercellSpacing(new java.awt.Dimension(0, 0));
 
         jPanel1.add(userCountLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(330, 140, 150, 140));
 
-        providerCountLabel.setBackground(new java.awt.Color(184, 115, 51));
+        providerCountLabel.setBackground(new java.awt.Color(78, 205, 196));
         providerCountLabel.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         jPane15.setBackground(new java.awt.Color(242, 133, 0));
@@ -373,7 +405,7 @@ recentActivityTable.setIntercellSpacing(new java.awt.Dimension(0, 0));
 
         jPanel1.add(providerCountLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(500, 140, 160, 140));
 
-        appointmentCountLabel.setBackground(new java.awt.Color(210, 180, 80));
+        appointmentCountLabel.setBackground(new java.awt.Color(255, 201, 113));
         appointmentCountLabel.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         jPane16.setIcon(new javax.swing.ImageIcon(getClass().getResource("/IMAGES/schedule.png"))); // NOI18N
@@ -397,7 +429,12 @@ recentActivityTable.setIntercellSpacing(new java.awt.Dimension(0, 0));
         ));
         jScrollPane1.setViewportView(recentActivityTable);
 
-        jPanel1.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(330, 310, 520, 90));
+        jPanel1.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(330, 310, 520, 130));
+
+        jLabel1.setFont(new java.awt.Font("Segoe UI Black", 0, 36)); // NOI18N
+        jLabel1.setForeground(new java.awt.Color(35, 36, 106));
+        jLabel1.setText("ADMIN DASHBOARD");
+        jPanel1.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(310, 30, -1, -1));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -409,9 +446,7 @@ recentActivityTable.setIntercellSpacing(new java.awt.Dimension(0, 0));
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, Short.MAX_VALUE))
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 600, Short.MAX_VALUE)
         );
 
         pack();
@@ -531,7 +566,6 @@ recentActivityTable.setIntercellSpacing(new java.awt.Dimension(0, 0));
     private javax.swing.JLabel jPane16;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
-    private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JLabel notificationBadge;
     private javax.swing.JLabel p;
