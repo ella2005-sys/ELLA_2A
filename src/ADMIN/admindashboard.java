@@ -16,90 +16,139 @@ public class admindashboard extends javax.swing.JFrame {
     /**
      * Creates new form admindashboard
      */
-    public admindashboard() {
-        initComponents();
-        
-        // Style and position them
+public admindashboard() {
+    initComponents();
+    
+    // 1. Setup the Top Cards
     setupCard(userCountLabel, "TOTAL USERS", p);
     setupCard(providerCountLabel, "PROVIDERS", jPane15);
     setupCard(appointmentCountLabel, "BOOKINGS", jPane16);
 
-    // Load the numbers
+    // 2. Load Data
     refreshStats();
-    
     updateRecentTable();
-        jLabel_Welcome.setText("Admin: " + CONFIG.Session.getName()); // use getter
-        new CONFIG.config().sessionGuard(this);
-        
-        java.awt.Color navy = new java.awt.Color(35, 66, 106);
+    
+    // 3. User & Session
+    jLabel_Welcome.setText("Welcome, Admin: " + CONFIG.Session.getName());
+    new CONFIG.config().sessionGuard(this);
+    
+    // 4. Sidebar Button Styling
+    java.awt.Color navy = new java.awt.Color(35, 66, 106);
     java.awt.Color logoutBrown = new java.awt.Color(106, 75, 35);
 
-    // Sidebar Menu Buttons
-    applyAdminButtonStyle(jButton1, navy); // Users
-    applyAdminButtonStyle(providers, navy); // Providers
-    applyAdminButtonStyle(appointments, navy); // Appointments
-    applyAdminButtonStyle(reports, navy); // Reports
-    applyAdminButtonStyle(jButton7, navy); // Services
-    applyAdminButtonStyle(jButton5, navy); // My Profile
+    applyAdminButtonStyle(jButton1, navy);    // Users
+    applyAdminButtonStyle(providers, navy);  // Providers
+    applyAdminButtonStyle(appointments, navy); 
+    applyAdminButtonStyle(reports, navy);
+    applyAdminButtonStyle(jButton7, navy);    // Services
+    applyAdminButtonStyle(jButton5, navy);    // Profile
+    applyAdminButtonStyle(jButton6, logoutBrown); // Logout
 
-    // Logout Button (Using the Brown accent to match User Dashboard)
-    applyAdminButtonStyle(jButton6, logoutBrown);
+    // 5. MODERN TABLE STYLING (The "Un-plain" fix)
+    recentActivityTable.setRowHeight(45); 
+    recentActivityTable.setShowGrid(false);
+    recentActivityTable.setIntercellSpacing(new java.awt.Dimension(0, 0));
+    recentActivityTable.setBackground(java.awt.Color.WHITE);
     
-    // Header Style (Optional but recommended)
-    
-    recentActivityTable.getTableHeader().setBackground(new java.awt.Color(250, 250, 250));
-    recentActivityTable.getTableHeader().setForeground(new java.awt.Color(120, 120, 120)); // Soft gray text
+    // Style the ScrollPane to remove the old-school border
+    jScrollPane1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(240, 240, 240)));
+    jScrollPane1.getViewport().setBackground(java.awt.Color.WHITE);
+
+    // Modern Header
+    recentActivityTable.getTableHeader().setBackground(java.awt.Color.WHITE);
+    recentActivityTable.getTableHeader().setForeground(new java.awt.Color(120, 130, 150));
     recentActivityTable.getTableHeader().setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
-    recentActivityTable.getTableHeader().setBorder(javax.swing.BorderFactory.createMatteBorder(0, 0, 1, 0, new java.awt.Color(235, 235, 235)));
+    recentActivityTable.getTableHeader().setPreferredSize(new java.awt.Dimension(0, 40));
+    recentActivityTable.getTableHeader().setBorder(javax.swing.BorderFactory.createMatteBorder(0, 0, 1, 0, new java.awt.Color(245, 245, 245)));
 
-// Style the Header
-    recentActivityTable.getTableHeader().setBackground(new java.awt.Color(248, 249, 250)); // Very light gray
-    recentActivityTable.getTableHeader().setForeground(new java.awt.Color(35, 66, 106)); // Deep Navy
-    recentActivityTable.getTableHeader().setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
-    recentActivityTable.getTableHeader().setBorder(javax.swing.BorderFactory.createMatteBorder(0, 0, 1, 0, new java.awt.Color(230, 230, 230)));
-    
-    
-    
-     // Inside public admindashboard() { ... }
+    // Apply the modern Status Renderer (Pill style) to Column index 2
+    recentActivityTable.getColumnModel().getColumn(2).setCellRenderer(new ModernStatusRenderer());
 
-     recentActivityTable.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-    @Override
-    public void mouseMoved(java.awt.event.MouseEvent e) {
-        int row = recentActivityTable.rowAtPoint(e.getPoint());
-        if (row > -1) {
-            // This highlights the row under the mouse
-            recentActivityTable.setRowSelectionInterval(row, row);
-            recentActivityTable.setSelectionBackground(new java.awt.Color(245, 248, 255)); // Very light blue tint
+    // Add padding to Name and Role columns (index 0 and 1)
+    javax.swing.table.DefaultTableCellRenderer paddingRenderer = new javax.swing.table.DefaultTableCellRenderer() {
+        @Override
+        public java.awt.Component getTableCellRendererComponent(javax.swing.JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            javax.swing.JLabel l = (javax.swing.JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            l.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 15, 0, 0)); 
+            l.setBackground(isSelected ? new java.awt.Color(245, 248, 255) : java.awt.Color.WHITE);
+            return l;
         }
-    }
-});
+    };
+    recentActivityTable.getColumnModel().getColumn(0).setCellRenderer(paddingRenderer);
+    recentActivityTable.getColumnModel().getColumn(1).setCellRenderer(paddingRenderer);
 
-    // Add this as a NEW CLASS inside your admindashboard.java file
+    // Hover effect for rows
+    recentActivityTable.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+        @Override
+        public void mouseMoved(java.awt.event.MouseEvent e) {
+            int row = recentActivityTable.rowAtPoint(e.getPoint());
+            if (row > -1) {
+                recentActivityTable.setRowSelectionInterval(row, row);
+                recentActivityTable.setSelectionBackground(new java.awt.Color(248, 250, 255));
+            }
+        }
+    });
+}
+
+// Modern Pill-style Status Renderer
+class ModernStatusRenderer extends javax.swing.table.DefaultTableCellRenderer {
+    @Override
+    public java.awt.Component getTableCellRendererComponent(javax.swing.JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+        javax.swing.JLabel label = (javax.swing.JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        
+        label.setHorizontalAlignment(javax.swing.JLabel.CENTER);
+        label.setOpaque(true); 
+        
+        String status = (value != null) ? value.toString() : "";
+        
+        if ("Approved".equalsIgnoreCase(status)) {
+            label.setForeground(new java.awt.Color(0, 150, 70)); // Dark Green text
+            label.setBackground(new java.awt.Color(230, 250, 240)); // Very Light Green background
+        } else if ("Pending".equalsIgnoreCase(status)) {
+            label.setForeground(new java.awt.Color(200, 120, 0)); // Dark Orange text
+            label.setBackground(new java.awt.Color(255, 245, 220)); // Light Orange background
+        } else {
+            label.setBackground(java.awt.Color.WHITE);
+        }
+
+        // Create the "Pill" shape using a border
+        label.setBorder(javax.swing.BorderFactory.createLineBorder(label.getBackground(), 5, true));
+        
+        return label;
+    }
+}
+
+    
     class StatusRenderer extends javax.swing.table.DefaultTableCellRenderer {
     @Override
     public java.awt.Component getTableCellRendererComponent(javax.swing.JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
         javax.swing.JLabel label = (javax.swing.JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
         
         label.setHorizontalAlignment(javax.swing.JLabel.CENTER);
-        label.setOpaque(true);
+        label.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 11));
         
-        // Match the colors from the reference image
-        if ("Approved".equals(value)) {
-            label.setBackground(new java.awt.Color(220, 255, 240)); // Light Green bubble
-            label.setForeground(new java.awt.Color(0, 150, 70));    // Dark Green text
-        } else if ("Pending".equals(value)) {
-            label.setBackground(new java.awt.Color(255, 245, 210)); // Light Orange bubble
-            label.setForeground(new java.awt.Color(200, 120, 0));   // Dark Orange text
+        String status = (value != null) ? value.toString() : "";
+        
+        if ("Approved".equalsIgnoreCase(status)) {
+            label.setText("● Approved");
+            label.setForeground(new java.awt.Color(0, 180, 100)); // Emerald Green
+        } else if ("Pending".equalsIgnoreCase(status)) {
+            label.setText("● Pending");
+            label.setForeground(new java.awt.Color(255, 160, 0)); // Amber
+        } else {
+            label.setForeground(new java.awt.Color(150, 150, 150));
         }
-        
-        // Create the "Pill" shape using a border
-        label.setBorder(javax.swing.BorderFactory.createEmptyBorder(5, 10, 5, 10));
-        
+
+        // If the row is selected, keep a subtle hint of the color but show selection
+        if (isSelected) {
+            label.setBackground(new java.awt.Color(230, 240, 255));
+        } else {
+            label.setBackground(java.awt.Color.WHITE);
+        }
+
         return label;
     }
 }
-
-    }
     
     private void applyAdminButtonStyle(javax.swing.JButton btn, java.awt.Color baseColor) {
     btn.setBorderPainted(false);
@@ -275,7 +324,6 @@ public class admindashboard extends javax.swing.JFrame {
         jButton7 = new javax.swing.JButton();
         jLabel2 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
-        jLabel_Welcome = new javax.swing.JLabel();
         userCountLabel = new javax.swing.JPanel();
         p = new javax.swing.JLabel();
         providerCountLabel = new javax.swing.JPanel();
@@ -287,6 +335,7 @@ public class admindashboard extends javax.swing.JFrame {
         jScrollPane1 = new javax.swing.JScrollPane();
         recentActivityTable = new javax.swing.JTable();
         jLabel1 = new javax.swing.JLabel();
+        jLabel_Welcome = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -381,11 +430,6 @@ public class admindashboard extends javax.swing.JFrame {
         jLabel3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/IMAGES/Blue White Modern Minimalist Interior Designer Personal Branding Logo(1)(1).jpg"))); // NOI18N
         jPanel2.add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 20, -1, 80));
 
-        jLabel_Welcome.setFont(new java.awt.Font("Segoe UI Black", 0, 18)); // NOI18N
-        jLabel_Welcome.setForeground(new java.awt.Color(204, 255, 255));
-        jLabel_Welcome.setText("Welcome, ");
-        jPanel2.add(jLabel_Welcome, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 130, 130, -1));
-
         jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 10, 260, 560));
 
         userCountLabel.setBackground(new java.awt.Color(255, 111, 94));
@@ -429,12 +473,17 @@ public class admindashboard extends javax.swing.JFrame {
         ));
         jScrollPane1.setViewportView(recentActivityTable);
 
-        jPanel1.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(330, 310, 520, 130));
+        jPanel1.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(330, 310, 520, 260));
 
         jLabel1.setFont(new java.awt.Font("Segoe UI Black", 0, 36)); // NOI18N
         jLabel1.setForeground(new java.awt.Color(35, 36, 106));
         jLabel1.setText("ADMIN DASHBOARD");
-        jPanel1.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(310, 30, -1, -1));
+        jPanel1.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(310, 50, -1, -1));
+
+        jLabel_Welcome.setFont(new java.awt.Font("Segoe Script", 0, 18)); // NOI18N
+        jLabel_Welcome.setForeground(new java.awt.Color(35, 66, 106));
+        jLabel_Welcome.setText("Welcome, ");
+        jPanel1.add(jLabel_Welcome, new org.netbeans.lib.awtextra.AbsoluteConstraints(310, 20, 370, -1));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
