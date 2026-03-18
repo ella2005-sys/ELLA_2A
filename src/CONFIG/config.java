@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 import net.proteanit.sql.DbUtils;
@@ -114,9 +115,7 @@ public static Connection connectDB() {
         }
     }
 
-    public ResultSet getData(String sql) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
+   
     
    public void sessionGuard(javax.swing.JFrame currentFrame) {
     // Use the Session getter since userId is now private
@@ -208,6 +207,33 @@ public void displayResultSet(ResultSet rs, JTable table) {
         return false;
     }
 }
+   
+   // I-paste kini sa imong CONFIG/config.java nga class
+public void deleteData(int id, String table, String column) {
+    try {
+        PreparedStatement pst = getConnection().prepareStatement("DELETE FROM " + table + " WHERE " + column + " = ?");
+        pst.setInt(1, id);
+        int rowsDeleted = pst.executeUpdate();
+        
+        if (rowsDeleted > 0) {
+            JOptionPane.showMessageDialog(null, "Deleted Successfully!");
+        } else {
+            JOptionPane.showMessageDialog(null, "No record found with ID: " + id);
+        }
+        pst.close();
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(null, "Delete Error: " + e.getMessage());
+    }
+}
+
+    // Sa sulod sa CONFIG/config.java
+public java.sql.ResultSet getData(String sql) throws java.sql.SQLException {
+    java.sql.Connection conn = getConnection();
+    java.sql.Statement stmt = conn.createStatement();
+    java.sql.ResultSet rs = stmt.executeQuery(sql);
+    return rs;
+}
+
     
 }
     

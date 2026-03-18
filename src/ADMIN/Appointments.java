@@ -7,6 +7,14 @@ package ADMIN;
 
 import javax.swing.table.DefaultTableModel;
 import CONFIG.config;
+import USER.BookingForm;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.SwingConstants;
 
 
 public class Appointments extends javax.swing.JFrame {
@@ -18,78 +26,130 @@ public class Appointments extends javax.swing.JFrame {
         initComponents();
         new CONFIG.config().sessionGuard(this);
         setLocationRelativeTo(null);
+    
+        // 1. SETUP TABLE FIRST
     setupTable();
-    displayAllAppointments(); // Fill the table with all bookings
     
-    
-    
+    // 2. COLORS
     java.awt.Color navy = new java.awt.Color(35, 66, 106);
-    java.awt.Color logoutBrown = new java.awt.Color(106, 75, 35);
-      applyAdminButtonStyle(jButton1, navy); 
+    java.awt.Color brown = new java.awt.Color(106, 75, 35);
+    java.awt.Color warningRed = new java.awt.Color(180, 40, 40);
+    java.awt.Color refreshColor = new java.awt.Color(40, 100, 40); 
+
+    // 3. APPLY STYLES (Diri nimo i-set ang design sa buttons)
+    applyAdminButtonStyle(jButton1, navy);    // Back to Home
+   
+    
+    styleAdminButtons(Edit, navy);
+    styleAdminButtons(Delete, warningRed); // Pula na ang Delete button
+    styleAdminButtons(jButton5, new java.awt.Color(60, 120, 60));// Search Button (Green)
+
+    // 4. LOAD DATA
+    displayAllAppointments();
+    
+     
     }
+    
+     private void styleAdminButtons(javax.swing.JButton btn, java.awt.Color baseColor) {
+    btn.setBorderPainted(false);
+    btn.setFocusPainted(false);
+    btn.setContentAreaFilled(false);
+    btn.setOpaque(true);
+    btn.setBackground(baseColor);
+    btn.setForeground(java.awt.Color.WHITE);
+    btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+    btn.setFont(new java.awt.Font("Segoe UI Bold", java.awt.Font.PLAIN, 13));
+
+    btn.addMouseListener(new java.awt.event.MouseAdapter() {
+        @Override
+        public void mouseEntered(java.awt.event.MouseEvent evt) {
+            btn.setBackground(baseColor.brighter()); // Mo-light inig tapat sa mouse
+        }
+        @Override
+        public void mouseExited(java.awt.event.MouseEvent evt) {
+            btn.setBackground(baseColor); // Mobalik sa original color
+        }
+    });
+}
 
     public void displayAllAppointments() {
     try {
-        CONFIG.config cfg = new CONFIG.config();
-        java.sql.Connection conn = cfg.getConnection();
+        CONFIG.config conf = new CONFIG.config();
+        java.sql.Connection conn = conf.connectDB();
         
-        // Admin View: No WHERE clause, shows all bookings
-        String sql = "SELECT b_id, u_id, s_id, b_date, b_status, b_total, b_address FROM tbl_bookings";
+        // SQL JOIN para makita ang tinuod nga names sa table
+        String sql = "SELECT b.b_id, u.user_name, s.s_name, b.b_date, b.b_address, b.b_total, b.b_status " +
+                     "FROM tbl_bookings b " +
+                     "JOIN tbl_users u ON b.u_id = u.user_id " +
+                     "JOIN tbl_services s ON b.s_id = s.s_id";
         
         java.sql.PreparedStatement pst = conn.prepareStatement(sql);
         java.sql.ResultSet rs = pst.executeQuery();
-
         DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
         model.setRowCount(0);
 
         while (rs.next()) {
             model.addRow(new Object[]{
                 rs.getString("b_id"),
-                rs.getString("u_id"),      // Shows which Customer ID booked
-                "Service #" + rs.getString("s_id"),
+                rs.getString("user_name"), // Name sa Customer
+                rs.getString("s_name"),    // Name sa Service
                 rs.getString("b_date"),
                 rs.getString("b_address"),
                 "₱" + rs.getString("b_total"),
-                rs.getString("b_status").toUpperCase()
+                rs.getString("b_status")
             });
         }
     } catch (Exception e) {
-        System.out.println("Error: " + e.getMessage());
+        System.out.println("Display Error: " + e.getMessage());
     }
 }
 
-private void setupTable() {
-    // Define headers to match the data we are pulling
-    String[] headers = {"ID", "User ID", "Service", "Date", "Address", "Amount", "Status"};
-    jTable1.setModel(new javax.swing.table.DefaultTableModel(null, headers));
+    private void setupTable() {
+    String[] headers = {"ID", "Customer Name", "Service", "Date", "Address", "Amount", "Status"};
+    DefaultTableModel model = new DefaultTableModel(null, headers) {
+        @Override
+        public boolean isCellEditable(int row, int column) {
+            return false; // Dili ma-edit ang cells diretso sa table
+        }
+    };
+    jTable1.setModel(model);
     
-    // Applying your signature dashboard style
-    jTable1.setRowHeight(30);
+    // Aesthetics - Para "Modern" ang look
+    jTable1.setRowHeight(35); // Mas dako gamay para dili pilit
+    jTable1.setShowGrid(false); // Tangtangon ang grid lines para limpyo
+    jTable1.setIntercellSpacing(new java.awt.Dimension(0, 0));
+    
+    // Header Style
     jTable1.getTableHeader().setBackground(new java.awt.Color(35, 66, 106));
     jTable1.getTableHeader().setForeground(java.awt.Color.WHITE);
+    jTable1.getTableHeader().setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 13));
+    jTable1.getTableHeader().setReorderingAllowed(false); // Dili ma-drag ang columns
 }
 
-private void applyAdminButtonStyle(javax.swing.JButton btn, java.awt.Color baseColor) {
-    btn.setBorderPainted(false);
-    btn.setFocusPainted(false);
-    btn.setContentAreaFilled(false); 
-    btn.setOpaque(true); 
-    btn.setBackground(baseColor);
-    btn.setForeground(java.awt.Color.WHITE);
-    btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-    btn.setFont(new java.awt.Font("Segoe UI Semibold", java.awt.Font.PLAIN, 14));
-    
-    btn.addMouseListener(new java.awt.event.MouseAdapter() {
-        @Override
-        public void mouseEntered(java.awt.event.MouseEvent evt) {
-            btn.setBackground(baseColor.brighter()); 
-        }
-        @Override
-        public void mouseExited(java.awt.event.MouseEvent evt) {
-            btn.setBackground(baseColor);
-        }
-    });
-}
+private void applyAdminButtonStyle(JButton btn, Color baseColor) {
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setContentAreaFilled(false);
+        btn.setOpaque(true);
+        btn.setBackground(baseColor);
+        btn.setForeground(Color.WHITE);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setHorizontalAlignment(SwingConstants.LEFT);
+        btn.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
+
+        btn.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent evt) {
+                btn.setBackground(baseColor.brighter());
+                btn.setBorder(BorderFactory.createMatteBorder(0, 5, 0, 0, Color.WHITE));
+            }
+            @Override
+            public void mouseExited(MouseEvent evt) {
+                btn.setBackground(baseColor);
+                btn.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
+            }
+        });
+    }
     
     
     @SuppressWarnings("unchecked")
@@ -104,6 +164,10 @@ private void applyAdminButtonStyle(javax.swing.JButton btn, java.awt.Color baseC
         jTable1 = new javax.swing.JTable();
         jPanel3 = new javax.swing.JPanel();
         jLabel2 = new javax.swing.JLabel();
+        Edit = new javax.swing.JButton();
+        Delete = new javax.swing.JButton();
+        jTextField1 = new javax.swing.JTextField();
+        jButton5 = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -125,9 +189,9 @@ private void applyAdminButtonStyle(javax.swing.JButton btn, java.awt.Color baseC
                 jButton1ActionPerformed(evt);
             }
         });
-        jPanel2.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(90, 170, 140, 40));
+        jPanel2.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 170, 260, 40));
 
-        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 309, 580));
+        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 30, 309, 620));
 
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -142,7 +206,7 @@ private void applyAdminButtonStyle(javax.swing.JButton btn, java.awt.Color baseC
         ));
         jScrollPane1.setViewportView(jTable1);
 
-        jPanel1.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(371, 195, 560, 263));
+        jPanel1.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 270, 560, 380));
 
         jPanel3.setBackground(new java.awt.Color(35, 66, 106));
 
@@ -155,7 +219,7 @@ private void applyAdminButtonStyle(javax.swing.JButton btn, java.awt.Color baseC
         jPanel3Layout.setHorizontalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-                .addContainerGap(80, Short.MAX_VALUE)
+                .addContainerGap(70, Short.MAX_VALUE)
                 .addComponent(jLabel2)
                 .addGap(59, 59, 59))
         );
@@ -167,20 +231,43 @@ private void applyAdminButtonStyle(javax.swing.JButton btn, java.awt.Color baseC
                 .addContainerGap(31, Short.MAX_VALUE))
         );
 
-        jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(371, 28, 560, -1));
+        jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 40, 550, -1));
+
+        Edit.setText("Update");
+        Edit.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                EditActionPerformed(evt);
+            }
+        });
+        jPanel1.add(Edit, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 230, 100, -1));
+
+        Delete.setText("Delete");
+        Delete.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                DeleteActionPerformed(evt);
+            }
+        });
+        jPanel1.add(Delete, new org.netbeans.lib.awtextra.AbsoluteConstraints(470, 230, 100, -1));
+        jPanel1.add(jTextField1, new org.netbeans.lib.awtextra.AbsoluteConstraints(730, 230, 100, -1));
+
+        jButton5.setText("Search");
+        jButton5.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton5ActionPerformed(evt);
+            }
+        });
+        jPanel1.add(jButton5, new org.netbeans.lib.awtextra.AbsoluteConstraints(830, 230, 100, -1));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 979, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, Short.MAX_VALUE))
+            .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 955, javax.swing.GroupLayout.PREFERRED_SIZE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 596, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 691, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(0, 0, Short.MAX_VALUE))
         );
 
@@ -192,6 +279,84 @@ private void applyAdminButtonStyle(javax.swing.JButton btn, java.awt.Color baseC
     ad.setVisible(true);
     this.dispose();
     }//GEN-LAST:event_jButton1ActionPerformed
+
+    private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
+      String find = jTextField1.getText();
+    try {
+        CONFIG.config conf = new CONFIG.config();
+        java.sql.Connection conn = conf.connectDB();
+        
+        String sql = "SELECT b.b_id, u.user_name, s.s_name, b.b_date, b.b_address, b.b_total, b.b_status " +
+             "FROM tbl_bookings b " +
+             "JOIN tbl_users u ON b.u_id = u.user_id " +
+             "JOIN tbl_services s ON b.s_id = s.s_id"; // <-- Siguruha nga 's_id' jud ang naa sa tbl_services
+        
+        java.sql.PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setString(1, "%" + find + "%");
+        pst.setString(2, "%" + find + "%");
+        pst.setString(3, "%" + find + "%");
+        
+        java.sql.ResultSet rs = pst.executeQuery();
+        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+        model.setRowCount(0);
+
+        while (rs.next()) {
+            model.addRow(new Object[]{
+                rs.getString("b_id"),
+                rs.getString("user_name"),
+                rs.getString("s_name"),
+                rs.getString("b_date"),
+                rs.getString("b_address"),
+                "₱" + rs.getString("b_total"),
+                rs.getString("b_status")
+            });
+        }
+    } catch (Exception e) {
+        System.out.println("Search Error: " + e.getMessage());
+    }
+    }//GEN-LAST:event_jButton5ActionPerformed
+
+    private void EditActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EditActionPerformed
+      int row = jTable1.getSelectedRow();
+    if (row == -1) {
+        javax.swing.JOptionPane.showMessageDialog(this, "Palihug pili og booking sa table!");
+        return;
+    }
+    
+    String id = jTable1.getValueAt(row, 0).toString();
+    String currentStatus = jTable1.getValueAt(row, 6).toString();
+    
+    // Listahan sa Status choices
+    String[] options = {"APPROVED", "COMPLETED", "CANCELLED"};
+    int choice = javax.swing.JOptionPane.showOptionDialog(this, 
+            "Update status for Booking ID: " + id, 
+            "Update Status", 
+            javax.swing.JOptionPane.DEFAULT_OPTION, 
+            javax.swing.JOptionPane.QUESTION_MESSAGE, 
+            null, options, options[0]);
+
+    if (choice != -1) { // Kung naay gipili
+        String newStatus = options[choice];
+        try {
+            CONFIG.config conf = new CONFIG.config();
+            String sql = "UPDATE tbl_bookings SET b_status = ? WHERE b_id = ?";
+            java.sql.Connection conn = conf.connectDB();
+            java.sql.PreparedStatement pst = conn.prepareStatement(sql);
+            pst.setString(1, newStatus);
+            pst.setString(2, id);
+            
+            pst.executeUpdate();
+            javax.swing.JOptionPane.showMessageDialog(this, "Status updated to " + newStatus);
+            displayAllAppointments(); // Refresh table
+        } catch (Exception e) {
+            System.out.println("Update Error: " + e.getMessage());
+        }
+    }
+    }//GEN-LAST:event_EditActionPerformed
+
+    private void DeleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DeleteActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_DeleteActionPerformed
 
     /**
      * @param args the command line arguments
@@ -225,7 +390,10 @@ private void applyAdminButtonStyle(javax.swing.JButton btn, java.awt.Color baseC
 }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton Delete;
+    private javax.swing.JButton Edit;
     private javax.swing.JButton jButton1;
+    private javax.swing.JButton jButton5;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JPanel jPanel1;
@@ -233,5 +401,6 @@ private void applyAdminButtonStyle(javax.swing.JButton btn, java.awt.Color baseC
     private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable jTable1;
+    private javax.swing.JTextField jTextField1;
     // End of variables declaration//GEN-END:variables
 }

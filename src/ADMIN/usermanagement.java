@@ -3,10 +3,12 @@ package ADMIN;
 
 import CONFIG.config;
 import MAIN.landingpage;
+import java.awt.Image;
 import javax.swing.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import javax.swing.table.DefaultTableModel;
 
 public class usermanagement extends JFrame {
      private config cfg = new config();
@@ -16,85 +18,151 @@ public class usermanagement extends JFrame {
         initComponents(); 
         new CONFIG.config().sessionGuard(this);
         setLayout(null);
+        
+    // 1. SETUP TABLE MODEL (Diri ra dapat ni, ayaw ibalhin)
+        jTable1.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {},
+            new String [] { "Profile", "ID", "Name", "Email", "Address", "Status", "Role" }
+        ) {
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                return (columnIndex == 0) ? javax.swing.Icon.class : Object.class;
+            }
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        });
+
+        // 2. STYLING
+        jTable1.setRowHeight(60);
         tableStyle();
-        loadUsers();
+
+        // 3. LOAD DATA
+        displayUsers();
+    
+        
+        // I-override ang model para sa Image Column (pananglitan Column index 0)
+    
 
         // Button actions
        AddUSer.addActionListener(e -> addUser());
         jButton2.addActionListener(e -> updateUser());
         delete.addActionListener(e -> deleteUser());
-        
-        java.awt.Color navy = new java.awt.Color(35, 66, 106);
+      // Setup Colors
+    java.awt.Color navy = new java.awt.Color(35, 66, 106);
     java.awt.Color brown = new java.awt.Color(106, 75, 35);
+    java.awt.Color warningRed = new java.awt.Color(180, 40, 40);
+    java.awt.Color refreshColor = new java.awt.Color(40, 100, 40); 
+    
+    // I-apply ang Hover Effect sa Sidebar Buttons
+    applyAdminButtonStyle(jButton5, navy);  // Back to Home
+   
 
-    // Styling the CRUD buttons
+    
+   
+    
     styleAdminButtons(AddUSer, navy);
     styleAdminButtons(jButton2, navy);
-    styleAdminButtons(delete, brown); // Brown for 'Delete' acts as a warning color
-    styleAdminButtons(jButton2, navy); // Providers
-    styleAdminButtons(jButton6, navy); // Appointments
-    styleAdminButtons(jButton7, navy); // Reports
-    styleAdminButtons(jButton8, navy); // Services
-    styleAdminButtons(jButton9, navy); // My Profile
-    styleAdminButtons(jButton10, navy); // My Profile
-    styleAdminButtons(jButton11, brown); // My Profile
+    styleAdminButtons(delete, warningRed); // Pula na ang Delete button
+    styleAdminButtons(jButton4, new java.awt.Color(60, 120, 60)); // Greenish para sa Search
     
-    
-    
-    
-    
-    // Styling the Back/Home button
-    styleAdminButtons(jButton5, navy); 
-    
-    // Table Styling (To match the User Dashboard)
-    jTable1.setRowHeight(30);
-    jTable1.getTableHeader().setBackground(navy);
-    jTable1.getTableHeader().setForeground(java.awt.Color.WHITE);
-
+    jTable1.getTableHeader().setDefaultRenderer(new javax.swing.table.DefaultTableCellRenderer() {
+    @Override
+    public java.awt.Component getTableCellRendererComponent(javax.swing.JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+        javax.swing.JLabel label = (javax.swing.JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        label.setBackground(new java.awt.Color(35, 66, 106)); // Navy Blue
+        label.setForeground(java.awt.Color.WHITE); // White Text
+        label.setHorizontalAlignment(javax.swing.JLabel.CENTER); // Center align labels
+        label.setBorder(javax.swing.BorderFactory.createMatteBorder(0, 0, 1, 1, java.awt.Color.WHITE)); // Subtle grid sa header
+        return label;
     }
+});
+}
+
+    
 
    void loadUsers() {
-        String sql = "SELECT user_id, user_name, user_email, user_address, user_number, u_status, user_role FROM tbl_users";
-        cfg.displayData(sql, jTable1);
+        displayUsers();
     }
    private void searchUser() {
-        String query = jTextField1.getText().trim();
-        String sql = "SELECT user_id, user_name, user_email, user_address, user_number, u_status, user_role " +
-                     "FROM tbl_users " +
-                     "WHERE user_id LIKE ? OR user_name LIKE ? OR user_email LIKE ?";
-        try (Connection conn = cfg.connectDB();
-             PreparedStatement pst = conn.prepareStatement(sql)) {
+    String query = jTextField1.getText().trim();
+    DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+    model.setRowCount(0);
 
-            String likeQuery = "%" + query + "%";
-            pst.setString(1, likeQuery);
-            pst.setString(2, likeQuery);
-            pst.setString(3, likeQuery);
+    String sql = "SELECT user_image, user_id, user_name, user_email, user_address, u_status, user_role FROM tbl_users " +
+                 "WHERE user_id LIKE ? OR user_name LIKE ? OR user_email LIKE ?";
 
-            ResultSet rs = pst.executeQuery();
-            cfg.displayResultSet(rs, jTable1);
+    try (Connection conn = cfg.connectDB();
+         PreparedStatement pst = conn.prepareStatement(sql)) {
 
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error searching users: " + e.getMessage());
+        String likeQuery = "%" + query + "%";
+        pst.setString(1, likeQuery);
+        pst.setString(2, likeQuery);
+        pst.setString(3, likeQuery);
+        ResultSet rs = pst.executeQuery();
+
+        while (rs.next()) {
+            String imagePath = rs.getString("user_image");
+            javax.swing.Icon icon = null;
+            if (imagePath != null && !imagePath.isEmpty()) {
+                java.io.File f = new java.io.File(imagePath.replace("\\", "/"));
+                if (f.exists()) {
+                    java.awt.Image img = new ImageIcon(f.getAbsolutePath()).getImage().getScaledInstance(50, 50, java.awt.Image.SCALE_SMOOTH);
+                    icon = new CircleIcon(img, 50);
+                }
+            }
+            model.addRow(new Object[]{icon, rs.getString("user_id"), rs.getString("user_name"), rs.getString("user_email"), rs.getString("user_address"), rs.getString("u_status"), rs.getString("user_role")});
         }
+    } catch (Exception e) {
+        System.out.println("Search Error: " + e.getMessage());
     }
+}
    
-   private void tableStyle() {
-    // 1. Basic Table Styling
-    jTable1.setRowHeight(30); // Makes rows roomier and modern
-    jTable1.setFont(new java.awt.Font("Segoe UI", 0, 12));
-    jTable1.setGridColor(new java.awt.Color(230, 230, 230)); // Soft gray grid lines
-    jTable1.setSelectionBackground(new java.awt.Color(35, 66, 106)); // Navy Blue selection
-    jTable1.setSelectionForeground(java.awt.Color.WHITE);
-
-    // 2. Styling the Header
-    jTable1.getTableHeader().setFont(new java.awt.Font("Segoe UI Black", 0, 13));
-    jTable1.getTableHeader().setBackground(new java.awt.Color(35, 66, 106)); // Navy Blue Header
-    jTable1.getTableHeader().setForeground(java.awt.Color.WHITE);
+  private void tableStyle() {
+    // 1. Header Styling (Kini ang mo-usab sa user_id, user_name, etc. into Blue)
+    jTable1.getTableHeader().setFont(new java.awt.Font("Segoe UI Bold", 0, 13));
+    jTable1.getTableHeader().setBackground(new java.awt.Color(35, 66, 106)); // Navy Blue
+    jTable1.getTableHeader().setForeground(java.awt.Color.WHITE); // Puti nga text
     jTable1.getTableHeader().setOpaque(false);
-    
-    // 3. Remove the Border of the ScrollPane
-    jScrollPane1.setBorder(javax.swing.BorderFactory.createEmptyBorder());
+    jTable1.getTableHeader().setPreferredSize(new java.awt.Dimension(0, 40)); // Mas baga gamay nga header
+
+    // 2. Row Styling
+    jTable1.setRowHeight(50); // Mas hayahay nga rows
+    jTable1.getColumnModel().getColumn(0).setPreferredWidth(60);
+    jTable1.setFont(new java.awt.Font("Segoe UI", 0, 12));
+    jTable1.setGridColor(new java.awt.Color(230, 230, 230)); 
+    jTable1.setShowVerticalLines(false); // Modern look (horizontal lines ra)
+
+    // 3. Selection Color (Inig click nimo sa row)
+    jTable1.setSelectionBackground(new java.awt.Color(220, 230, 250)); // Light Blue highlight
+    jTable1.setSelectionForeground(new java.awt.Color(35, 66, 106)); // Navy Blue text
+
+    // 4. ScrollPane Fix
+    jScrollPane1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(240, 240, 240)));
     jScrollPane1.getViewport().setBackground(java.awt.Color.WHITE);
+}
+  
+  private void styleAdminButtons(javax.swing.JButton btn, java.awt.Color baseColor) {
+    btn.setBorderPainted(false);
+    btn.setFocusPainted(false);
+    btn.setContentAreaFilled(false);
+    btn.setOpaque(true);
+    btn.setBackground(baseColor);
+    btn.setForeground(java.awt.Color.WHITE);
+    btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+    btn.setFont(new java.awt.Font("Segoe UI Bold", java.awt.Font.PLAIN, 13));
+
+    btn.addMouseListener(new java.awt.event.MouseAdapter() {
+        @Override
+        public void mouseEntered(java.awt.event.MouseEvent evt) {
+            btn.setBackground(baseColor.brighter()); // Mo-light inig tapat sa mouse
+        }
+        @Override
+        public void mouseExited(java.awt.event.MouseEvent evt) {
+            btn.setBackground(baseColor); // Mobalik sa original color
+        }
+    });
 }
 
 
@@ -155,28 +223,91 @@ public class usermanagement extends JFrame {
     }
   
   
-  private void styleAdminButtons(javax.swing.JButton btn, java.awt.Color baseColor) {
+ private void applyAdminButtonStyle(javax.swing.JButton btn, java.awt.Color baseColor) {
     btn.setBorderPainted(false);
     btn.setFocusPainted(false);
-    btn.setContentAreaFilled(false); 
-    btn.setOpaque(true); 
+    btn.setContentAreaFilled(false);
+    btn.setOpaque(true);
     btn.setBackground(baseColor);
     btn.setForeground(java.awt.Color.WHITE);
     btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-    btn.setFont(new java.awt.Font("Segoe UI Bold", java.awt.Font.PLAIN, 13));
-    
+    btn.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+    // Initial padding
+    btn.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 20, 0, 0));
+
     btn.addMouseListener(new java.awt.event.MouseAdapter() {
         @Override
         public void mouseEntered(java.awt.event.MouseEvent evt) {
-            btn.setBackground(baseColor.brighter()); 
+            // Inig tapat sa mouse: mo-bright ug naay puti nga linya sa left
+            btn.setBackground(baseColor.brighter());
+            btn.setBorder(javax.swing.BorderFactory.createMatteBorder(0, 5, 0, 0, java.awt.Color.WHITE));
         }
         @Override
         public void mouseExited(java.awt.event.MouseEvent evt) {
+            // Inig kaws sa mouse: mobalik sa normal
             btn.setBackground(baseColor);
+            btn.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 20, 0, 0));
         }
     });
 }
+ 
+   public void displayUsers() {
+    DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+    model.setRowCount(0);
 
+    String sql = "SELECT user_image, user_id, user_name, user_email, user_address, u_status, user_role FROM tbl_users";
+
+    try (Connection conn = cfg.connectDB();
+         PreparedStatement pst = conn.prepareStatement(sql);
+         ResultSet rs = pst.executeQuery()) {
+
+        while (rs.next()) {
+            String dbPath = rs.getString("user_image");
+            Icon finalIcon = null;
+
+            if (dbPath != null && !dbPath.isEmpty()) {
+                // KANI ANG FIX: I-convert ang backslash sa database ngadto sa forward slash
+                String fixedPath = dbPath.replace("\\", "/");
+                java.io.File file = new java.io.File(fixedPath);
+
+                if (file.exists()) {
+                    ImageIcon temp = new ImageIcon(file.getAbsolutePath());
+                    java.awt.Image img = temp.getImage().getScaledInstance(50, 50, java.awt.Image.SCALE_SMOOTH);
+                    finalIcon = new CircleIcon(img, 50);
+                } else {
+                    System.out.println("File not found at: " + fixedPath);
+                }
+            }
+
+            // KUNG WALAY IMAGE (NULL): Butangan og default nga lingin para dili blangko tan-awon
+            if (finalIcon == null) {
+                // Mag-himo ta og empty circle placeholder para sa mga walay picture
+                finalIcon = new Icon() {
+                    @Override public void paintIcon(java.awt.Component c, java.awt.Graphics g, int x, int y) {
+                        java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+                        g2.setColor(java.awt.Color.LIGHT_GRAY);
+                        g2.fillOval(x, y, 50, 50);
+                        g2.dispose();
+                    }
+                    @Override public int getIconWidth() { return 50; }
+                    @Override public int getIconHeight() { return 50; }
+                };
+            }
+
+            model.addRow(new Object[]{
+                finalIcon,
+                rs.getString("user_id"),
+                rs.getString("user_name"),
+                rs.getString("user_email"),
+                rs.getString("user_address"),
+                rs.getString("u_status"),
+                rs.getString("user_role")
+            });
+        }
+    } catch (Exception e) {
+        System.out.println("Display Error: " + e.getMessage());
+    }
+}
     
    
     @SuppressWarnings("unchecked")
@@ -188,12 +319,6 @@ public class usermanagement extends JFrame {
         jLabel2 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
         jButton5 = new javax.swing.JButton();
-        jButton6 = new javax.swing.JButton();
-        jButton7 = new javax.swing.JButton();
-        jButton8 = new javax.swing.JButton();
-        jButton9 = new javax.swing.JButton();
-        jButton10 = new javax.swing.JButton();
-        jButton11 = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
         jPanel3 = new javax.swing.JPanel();
@@ -203,6 +328,7 @@ public class usermanagement extends JFrame {
         delete = new javax.swing.JButton();
         jTextField1 = new javax.swing.JTextField();
         jButton4 = new javax.swing.JButton();
+        btnRefresh = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -229,50 +355,9 @@ public class usermanagement extends JFrame {
                 jButton5ActionPerformed(evt);
             }
         });
-        jPanel2.add(jButton5, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 170, 140, -1));
+        jPanel2.add(jButton5, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 180, 230, -1));
 
-        jButton6.setBackground(new java.awt.Color(35, 66, 106));
-        jButton6.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
-        jButton6.setForeground(new java.awt.Color(255, 255, 255));
-        jButton6.setText("Providers");
-        jButton6.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton6ActionPerformed(evt);
-            }
-        });
-        jPanel2.add(jButton6, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 210, 140, -1));
-
-        jButton7.setBackground(new java.awt.Color(35, 66, 106));
-        jButton7.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
-        jButton7.setForeground(new java.awt.Color(255, 255, 255));
-        jButton7.setText("Appointments");
-        jPanel2.add(jButton7, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 250, 140, -1));
-
-        jButton8.setBackground(new java.awt.Color(35, 66, 106));
-        jButton8.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
-        jButton8.setForeground(new java.awt.Color(255, 255, 255));
-        jButton8.setText("Reports");
-        jPanel2.add(jButton8, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 290, 140, -1));
-
-        jButton9.setBackground(new java.awt.Color(35, 66, 106));
-        jButton9.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
-        jButton9.setForeground(new java.awt.Color(255, 255, 255));
-        jButton9.setText("Services");
-        jPanel2.add(jButton9, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 330, 140, -1));
-
-        jButton10.setBackground(new java.awt.Color(35, 66, 106));
-        jButton10.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
-        jButton10.setForeground(new java.awt.Color(255, 255, 255));
-        jButton10.setText("My Profile");
-        jPanel2.add(jButton10, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 370, 140, -1));
-
-        jButton11.setBackground(new java.awt.Color(35, 66, 106));
-        jButton11.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
-        jButton11.setForeground(new java.awt.Color(255, 255, 255));
-        jButton11.setText("Logout");
-        jPanel2.add(jButton11, new org.netbeans.lib.awtextra.AbsoluteConstraints(100, 460, -1, -1));
-
-        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 280, 502));
+        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 20, 280, 600));
 
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -287,7 +372,7 @@ public class usermanagement extends JFrame {
         ));
         jScrollPane1.setViewportView(jTable1);
 
-        jPanel1.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(320, 160, 520, 303));
+        jPanel1.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(330, 210, 580, 410));
 
         jPanel3.setBackground(new java.awt.Color(35, 66, 106));
 
@@ -299,10 +384,10 @@ public class usermanagement extends JFrame {
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-                .addContainerGap(102, Short.MAX_VALUE)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addGap(96, 96, 96)
                 .addComponent(jLabel1)
-                .addGap(100, 100, 100))
+                .addContainerGap(106, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -312,7 +397,7 @@ public class usermanagement extends JFrame {
                 .addContainerGap())
         );
 
-        jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(350, 10, 440, 50));
+        jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(410, 40, 440, 50));
 
         AddUSer.setBackground(new java.awt.Color(35, 66, 106));
         AddUSer.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
@@ -323,7 +408,7 @@ public class usermanagement extends JFrame {
                 AddUSerActionPerformed(evt);
             }
         });
-        jPanel1.add(AddUSer, new org.netbeans.lib.awtextra.AbsoluteConstraints(320, 120, 100, 30));
+        jPanel1.add(AddUSer, new org.netbeans.lib.awtextra.AbsoluteConstraints(360, 160, 100, 30));
 
         jButton2.setBackground(new java.awt.Color(35, 66, 106));
         jButton2.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
@@ -334,7 +419,7 @@ public class usermanagement extends JFrame {
                 jButton2ActionPerformed(evt);
             }
         });
-        jPanel1.add(jButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(407, 120, 130, 30));
+        jPanel1.add(jButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(460, 160, 130, 30));
 
         delete.setBackground(new java.awt.Color(35, 66, 106));
         delete.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
@@ -345,7 +430,7 @@ public class usermanagement extends JFrame {
                 deleteActionPerformed(evt);
             }
         });
-        jPanel1.add(delete, new org.netbeans.lib.awtextra.AbsoluteConstraints(530, 120, 120, 30));
+        jPanel1.add(delete, new org.netbeans.lib.awtextra.AbsoluteConstraints(590, 160, 120, 30));
 
         jTextField1.setBorder(javax.swing.BorderFactory.createEtchedBorder());
         jTextField1.addActionListener(new java.awt.event.ActionListener() {
@@ -358,7 +443,7 @@ public class usermanagement extends JFrame {
                 jTextField1KeyReleased(evt);
             }
         });
-        jPanel1.add(jTextField1, new org.netbeans.lib.awtextra.AbsoluteConstraints(660, 120, 90, 30));
+        jPanel1.add(jTextField1, new org.netbeans.lib.awtextra.AbsoluteConstraints(730, 160, 90, 30));
 
         jButton4.setBackground(new java.awt.Color(35, 66, 6));
         jButton4.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
@@ -369,22 +454,35 @@ public class usermanagement extends JFrame {
                 jButton4ActionPerformed(evt);
             }
         });
-        jPanel1.add(jButton4, new org.netbeans.lib.awtextra.AbsoluteConstraints(750, 120, 90, 30));
+        jPanel1.add(jButton4, new org.netbeans.lib.awtextra.AbsoluteConstraints(820, 160, 90, 30));
+
+        btnRefresh.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
+        btnRefresh.setForeground(new java.awt.Color(255, 255, 255));
+        btnRefresh.setText("Refresh");
+        btnRefresh.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnRefreshActionPerformed(evt);
+            }
+        });
+        jPanel1.add(btnRefresh, new org.netbeans.lib.awtextra.AbsoluteConstraints(820, 110, 90, 40));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 864, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 930, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(0, 0, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 640, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
         );
 
         pack();
+        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
     private void AddUSerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddUSerActionPerformed
@@ -393,19 +491,18 @@ public class usermanagement extends JFrame {
     }//GEN-LAST:event_AddUSerActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-    int row = jTable1.getSelectedRow();
-    if (row == -1) {
-        JOptionPane.showMessageDialog(this, "Please select a user from the table.");
-        return;
-    }
-
-    // Get the User ID from the first column (index 0)
-    String userId = jTable1.getValueAt(row, 0).toString(); 
-
-    // Pass 'this' as the second argument so UpdateUser can refresh this table
-    UpdateUser updateForm = new UpdateUser(userId, this); 
-    updateForm.setVisible(true);
-    updateForm.setLocationRelativeTo(this);
+            // KANI NGA CODE NAA SA USERMANAGEMENT.JAVA
+int row = jTable1.getSelectedRow();
+if (row != -1) {
+    // Column 0 = Profile Icon/Picture
+    // Column 1 = Ang tinuod nga User ID (Numero)
+    
+    Object value = jTable1.getValueAt(row, 1); // USBA NI NGADTO SA 1
+    String id = value.toString(); 
+    
+    UpdateUser up = new UpdateUser(id, this);
+    up.setVisible(true);
+}
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void deleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteActionPerformed
@@ -431,9 +528,13 @@ public class usermanagement extends JFrame {
     this.dispose(); // Closes the user management window
     }//GEN-LAST:event_jButton5ActionPerformed
 
-    private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jButton6ActionPerformed
+    private void btnRefreshActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRefreshActionPerformed
+      // I-call ang displayUsers para mapuno pag-usab ang jTable1
+    displayUsers(); 
+    
+    // Optional: Isulti sa user nga na-update na ang table
+    JOptionPane.showMessageDialog(null, "Table has been updated!");
+    }//GEN-LAST:event_btnRefreshActionPerformed
 
     /**
      * @param args the command line arguments
@@ -473,19 +574,30 @@ public class usermanagement extends JFrame {
         }
     });
 }
+   class CircleIcon implements javax.swing.Icon {
+    private java.awt.Image image;
+    private int size;
+    public CircleIcon(java.awt.Image image, int size) { this.image = image; this.size = size; }
+    @Override
+    public void paintIcon(java.awt.Component c, java.awt.Graphics g, int x, int y) {
+        java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+        g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+        java.awt.geom.Ellipse2D.Double clip = new java.awt.geom.Ellipse2D.Double(x, y, size, size);
+        g2.setClip(clip);
+        g2.drawImage(image, x, y, size, size, null);
+        g2.dispose();
+    }
+    @Override public int getIconWidth() { return size; }
+    @Override public int getIconHeight() { return size; }
+}
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton AddUSer;
+    private javax.swing.JButton btnRefresh;
     private javax.swing.JButton delete;
-    private javax.swing.JButton jButton10;
-    private javax.swing.JButton jButton11;
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton4;
     private javax.swing.JButton jButton5;
-    private javax.swing.JButton jButton6;
-    private javax.swing.JButton jButton7;
-    private javax.swing.JButton jButton8;
-    private javax.swing.JButton jButton9;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
@@ -496,6 +608,8 @@ public class usermanagement extends JFrame {
     private javax.swing.JTable jTable1;
     private javax.swing.JTextField jTextField1;
     // End of variables declaration//GEN-END:variables
+
+    
 
    
 

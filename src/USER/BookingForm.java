@@ -1,11 +1,31 @@
 
 package USER;
 
+import ADMIN.Appointments;
+
 
 public class BookingForm extends javax.swing.JFrame {
 
     int selectedServiceId; 
     double selectedServicePrice;
+    
+    // Sa babaw, ilisdi ang 'javax.swing.JFrame parent;' ani:
+javax.swing.JFrame callerFrame; 
+
+// Update imong Constructor:
+public BookingForm(javax.swing.JFrame frame) {
+    initComponents();
+    this.callerFrame = frame; // Diri nato i-save ang Appointments frame
+    setLocationRelativeTo(null);
+    new CONFIG.config().sessionGuard(this);
+    
+    this.selectedServiceId = 0; 
+    this.selectedServicePrice = 0.0;
+    
+    jLabel2.setText("Admin Booking Mode");
+    jLabel3.setText("Manual Entry");
+    styleBookingUI();
+}
 
     
     public BookingForm(int serviceId, String serviceName, double price) {
@@ -22,39 +42,34 @@ public class BookingForm extends javax.swing.JFrame {
     
     styleBookingUI();
 }
- 
-  private void styleBookingUI() {
-    // Background Refinement
-    jPanel3.setBackground(new java.awt.Color(248, 249, 250)); // Light Gray/White
-    jPanel2.setBackground(new java.awt.Color(35, 66, 106));    // Professional Navy Header
+
+    private void styleBookingUI() {
+    // 1. Background (Light color ni, so dapat dark ang text)
+    jPanel3.setBackground(new java.awt.Color(248, 249, 250)); 
+    jPanel2.setBackground(new java.awt.Color(35, 66, 106)); 
+
+    // 2. I-force ang color sa tanan labels para makita jud sila
+    java.awt.Color darkText = new java.awt.Color(50, 50, 50); // Dark Gray
     
-    // Modernize Input Fields (Padding and Borders)
-    javax.swing.JComponent[] inputs = {jSpinner1, jTextField1};
-    for (javax.swing.JComponent input : inputs) {
-        input.setBorder(javax.swing.BorderFactory.createCompoundBorder(
-            new javax.swing.border.LineBorder(new java.awt.Color(220, 220, 220), 1, true),
-            javax.swing.BorderFactory.createEmptyBorder(5, 10, 5, 10)
-        ));
-    }
+    jLabel1.setForeground(java.awt.Color.WHITE); // Title (kay Navy man ang header)
+    jLabel2.setForeground(darkText); // Service Name
+    jLabel3.setForeground(darkText); // Price
+    jLabel4.setForeground(darkText); // Date
+    jLabel5.setForeground(darkText); // Address
     
-    // Label Styling
+    // Modernize labels font
     java.awt.Font modernFont = new java.awt.Font("Segoe UI Semibold", java.awt.Font.PLAIN, 16);
+    jLabel2.setFont(modernFont);
+    jLabel3.setFont(modernFont);
     jLabel4.setFont(modernFont);
     jLabel5.setFont(modernFont);
-    jLabel4.setForeground(new java.awt.Color(70, 70, 70));
-    jLabel5.setForeground(new java.awt.Color(70, 70, 70));
-
-    // Button Styling
-    styleButton(confirm, new java.awt.Color(35, 66, 106)); // Deep Navy
-    styleButton(cancel, new java.awt.Color(210, 210, 210));   // Neutral Gray for secondary action
-    cancel.setForeground(java.awt.Color.DARK_GRAY);
-    javax.swing.JSpinner.DateEditor timeEditor = new javax.swing.JSpinner.DateEditor(jSpinner1, "MMM dd, yyyy - hh:mm a");
-    jSpinner1.setEditor(timeEditor);
-
-// Optional: Set the default time to "Now"
-    jSpinner1.setValue(new java.util.Date());
+    
+    // Ang uban nimo nga code (Inputs, Buttons, etc.)
+    // ... (keep your existing spinner and button styles) ...
 }
-
+ 
+ 
+    
 private void styleButton(javax.swing.JButton btn, java.awt.Color bg) {
     btn.setBackground(bg);
     btn.setFocusPainted(false);
@@ -203,11 +218,7 @@ private void styleBookingButton(javax.swing.JButton btn, java.awt.Color bg) {
 
     private void confirmActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_confirmActionPerformed
     String address = jTextField1.getText().trim();
-    
-    // 1. Get both Date and Time from the Spinner
     java.util.Date spinnerDate = (java.util.Date) jSpinner1.getValue();
-    
-    // 2. Format it for a SQL 'DATETIME' or 'TIMESTAMP' column (YYYY-MM-DD HH:MM:SS)
     java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     String formattedDateTime = sdf.format(spinnerDate);
 
@@ -218,24 +229,29 @@ private void styleBookingButton(javax.swing.JButton btn, java.awt.Color bg) {
 
     try {
         CONFIG.config conf = new CONFIG.config();
-        
-        // Use PreparedStatement for security
-        String sql = "INSERT INTO tbl_bookings (u_id, s_id, b_date, b_status, b_total, b_address) "
-                   + "VALUES (?, ?, ?, 'Pending', ?, ?)";
+        String sql = "INSERT INTO tbl_bookings (u_id, s_id, b_date, b_status, b_total, b_address) VALUES (?, ?, ?, 'PENDING', ?, ?)";
         
         java.sql.Connection conn = conf.connectDB();
         java.sql.PreparedStatement pst = conn.prepareStatement(sql);
         
         pst.setInt(1, CONFIG.Session.getUserId());
         pst.setInt(2, this.selectedServiceId);
-        pst.setString(3, formattedDateTime); // This now includes the time!
+        pst.setString(3, formattedDateTime);
         pst.setDouble(4, this.selectedServicePrice);
         pst.setString(5, address);
 
         pst.executeUpdate();
-        javax.swing.JOptionPane.showMessageDialog(this, "Booking Successful for " + formattedDateTime);
-        new udashboard().setVisible(true);
-        this.dispose();
+javax.swing.JOptionPane.showMessageDialog(this, "Booking Successful!");
+
+// Check kung gikan ba sa Appointments ang nag-abli
+if (callerFrame != null && callerFrame instanceof Appointments) {
+    ((Appointments)callerFrame).displayAllAppointments(); // Refresh Admin Table
+    this.dispose(); 
+} else {
+    // Kung user ang nag book
+    new udashboard().setVisible(true);
+    this.dispose();
+}
         
     } catch (Exception e) {
         javax.swing.JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());

@@ -9,20 +9,73 @@ import CONFIG.config;
 
 public class Userform extends javax.swing.JFrame {
 
-     private usermanagement parent;
-     config cfg = new config();
+     public String action = "Add"; // Kinahanglan naay default value para dili null
+    public javax.swing.JFrame parentFrame; 
+    config cfg = new config();
+
+    // I-update ang constructor para generic
+    public Userform(javax.swing.JFrame parent) {
+        initComponents();
+    this.parentFrame = parent;
+    setLocationRelativeTo(parent);
+    jTextField1.setEnabled(false); 
+    new CONFIG.config().sessionGuard(this); // User ID field
+    }
     
     public Userform(usermanagement parent) {
         initComponents();
-         this.parent = parent;
         setLocationRelativeTo(parent);
          jTextField1.setEnabled(false);
          new CONFIG.config().sessionGuard(this);
     }
 
+    // Kani nga constructor ang mo-fetch sa data base sa ID
+      public Userform(String userId, javax.swing.JFrame parent) {
+    initComponents();
+    this.parentFrame = parent;
+    this.action = "Update"; 
+    setLocationRelativeTo(parent);
+    jTextField1.setEnabled(false); // ID should be read-only
+    
+    try {
+        config cfg = new config();
+        // Siguraduha nga ang SQL match sa imong table columns
+        java.sql.ResultSet rs = cfg.getData("SELECT * FROM tbl_users WHERE user_id = '" + userId + "'");
+        
+        if(rs.next()){
+            // I-set ang text sa textfields gikan sa Database
+            jTextField1.setText(rs.getString("user_id"));
+            jTextField2.setText(rs.getString("user_name"));
+            jTextField3.setText(rs.getString("user_email"));
+            jTextField4.setText(rs.getString("user_address"));
+            jTextField5.setText(rs.getString("user_number"));
+            jTextField7.setText(rs.getString("u_status"));
+            jTextField6.setText(rs.getString("user_role"));
+            jTextField8.setText(rs.getString("user_password"));
+            
+            // I-change ang UI labels para sa Update mode
+            jLabel1.setText("UPDATE USER/PROVIDER");
+            AddUser.setText("UPDATE");
+        }
+        rs.close(); // Kanunay i-close para dili mo-leak ang connection
+    } catch (Exception e) {
+        System.out.println("Error fetching user: " + e.getMessage());
+    }
+}
     private Userform() {
       
     }
+    
+    public void setFields(String id, String name, String email, String address, String num, String status, String role, String pass) {
+    jTextField1.setText(id);      // ID
+    jTextField2.setText(name);    // Name
+    jTextField3.setText(email);   // Email
+    jTextField4.setText(address); // Address
+    jTextField5.setText(num);     // Number
+    jTextField7.setText(status);  // Status
+    jTextField6.setText(role);    // Role
+    jTextField8.setText(pass);    // Password
+}
     
 
     
@@ -174,35 +227,38 @@ public class Userform extends javax.swing.JFrame {
     }//GEN-LAST:event_CancelActionPerformed
 
     private void AddUserActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddUserActionPerformed
-       try {
-            String name = jTextField2.getText();
-            String email = jTextField3.getText();
-            String address = jTextField4.getText();
-            String number = jTextField5.getText();
-            String status = jTextField7.getText();
-            String role = jTextField6.getText();
-            String pass = jTextField8.getText();
+      String id = jTextField1.getText();
+    String name = jTextField2.getText();
+    String email = jTextField3.getText();
+    String address = jTextField4.getText();
+    String number = jTextField5.getText();
+    String status = jTextField7.getText();
+    String role = jTextField6.getText();
+    String pass = jTextField8.getText();
 
-            if(name.isEmpty() || email.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Name and Email are required");
-                return;
-            }
+    if(name.isEmpty() || email.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Name and Email are required!");
+        return;
+    }
 
-            String sql = "INSERT INTO tbl_users(user_name, user_email, user_address, user_number,user_password, u_status, user_role) VALUES(?, ?, ?, ?, ?, ?, ?)";
-            cfg.executeSQL(sql, name, email, address, number,pass, status, role);
+    // CHECK SA ACTION (Dili na ni mo-error kay naay default value sa taas)
+    if ("Add".equals(action)) { 
+        String sql = "INSERT INTO tbl_users(user_name, user_email, user_address, user_number, user_password, u_status, user_role) VALUES(?, ?, ?, ?, ?, ?, ?)";
+        cfg.executeSQL(sql, name, email, address, number, pass, status, role);
+        JOptionPane.showMessageDialog(this, "Successfully Added!");
+    } 
+    else if ("Update".equals(action)) {
+        String sql = "UPDATE tbl_users SET user_name=?, user_email=?, user_address=?, user_number=?, user_password=?, u_status=?, user_role=? WHERE user_id=?";
+        cfg.executeSQL(sql, name, email, address, number, pass, status, role, id);
+        JOptionPane.showMessageDialog(this, "Successfully Updated!");
+    }
 
-            JOptionPane.showMessageDialog(this, "User added successfully!");
+    // Sa sulod sa Userform.java human sa save/update:
+if (parentFrame instanceof usermanagement) {
+    ((usermanagement) parentFrame).displayUsers(); // Automatic refresh sa jTable1
 
-            // Refresh parent table
-            if(parent != null){
-                parent.loadUsers();
-            }
-
-            dispose(); // close form
-
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error adding user: " + e.getMessage());
-        }
+    this.dispose();
+}
     }//GEN-LAST:event_AddUserActionPerformed
 
     /**

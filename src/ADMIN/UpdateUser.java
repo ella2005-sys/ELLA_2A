@@ -12,47 +12,48 @@ public class UpdateUser extends javax.swing.JFrame {
     private usermanagement parent; // Reference to refresh the table
 
     public UpdateUser(String userId, usermanagement parent) {
-        initComponents();
-        this.userId = userId;
-        this.parent = parent;
-        new CONFIG.config().sessionGuard(this);
-        
-
-        // Set ID in the field and disable editing
-        jTextField1.setText(userId); 
-        jTextField1.setEditable(false); 
-
-        loadUserData(); 
-    }
+    
+    
+    
+    initComponents();
+    this.userId = userId;
+    this.parent = parent;
+    
+    // I-set ang text sa ID field
+    jTextField1.setText(userId); 
+    jTextField1.setEditable(false); 
+    
+    loadUserData(); 
+    setLocationRelativeTo(parent);
+}
 
     private UpdateUser() {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     private void loadUserData() {
-        try {
-            config cfg = new config();
-            String sql = "SELECT * FROM tbl_users WHERE user_id = ?";
-            PreparedStatement pst = cfg.getConnection().prepareStatement(sql);
-            pst.setString(1, userId);
-            ResultSet rs = pst.executeQuery();
+    try {
+        config cfg = new config();
+        String sql = "SELECT * FROM tbl_users WHERE user_id = '" + userId + "'";
+        ResultSet rs = cfg.getData(sql); // Gamita ang getData method sa imong config
 
-            if (rs.next()) {
-                jTextField2.setText(rs.getString("user_name"));
-                jTextField3.setText(rs.getString("user_email"));
-                jTextField4.setText(rs.getString("user_address"));
-                jTextField5.setText(rs.getString("user_number"));
-                jTextField6.setText(""); // Usually we don't show passwords
-                jTextField7.setText(rs.getString("u_status"));
-                jTextField8.setText(rs.getString("user_role"));
-            }
-            rs.close();
-            pst.close();
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error loading data: " + e.getMessage());
+        if (rs.next()) {
+            jTextField2.setText(rs.getString("user_name"));
+            jTextField3.setText(rs.getString("user_email"));
+            jTextField4.setText(rs.getString("user_address"));
+            jTextField5.setText(rs.getString("user_number"));
+            jTextField6.setText(""); 
+            jTextField7.setText(rs.getString("u_status"));
+            jTextField8.setText(rs.getString("user_role"));
+            System.out.println("Data Loaded for ID: " + userId); // Para makita sa console kung load ba
+        } else {
+            System.out.println("No user found with ID: " + userId);
         }
+        rs.close();
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(this, "Error loading data: " + e.getMessage());
     }
-
+}
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -85,9 +86,10 @@ public class UpdateUser extends javax.swing.JFrame {
         jButton1 = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
         jPanel1.setBackground(new java.awt.Color(106, 75, 35));
+        jPanel1.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
         jPanel1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         jPanel2.setBackground(new java.awt.Color(35, 66, 106));
