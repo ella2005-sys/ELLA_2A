@@ -24,42 +24,77 @@ public class reports extends javax.swing.JFrame {
     displayReports();
     
     
+    // Style para sa Total Revenue Card
+jLabel_TotalRevenue.setOpaque(true);
+jLabel_TotalRevenue.setBackground(new java.awt.Color(240, 245, 250)); // Light Blue background
+jLabel_TotalRevenue.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(35, 66, 106), 2));
+jLabel_TotalRevenue.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 18));
+
+// Style para sa Most Booked Card
+jLabel_MostBooked.setOpaque(true);
+jLabel_MostBooked.setBackground(new java.awt.Color(250, 240, 240)); // Light Red/Pink background
+jLabel_MostBooked.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(150, 50, 50), 2));
+jLabel_MostBooked.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 14));
+
+// I-color ang Total Revenue column (Index 3)
+jTable1.getColumnModel().getColumn(3).setCellRenderer(new javax.swing.table.DefaultTableCellRenderer() {
+    @Override
+    public java.awt.Component getTableCellRendererComponent(javax.swing.JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+        java.awt.Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        c.setForeground(new java.awt.Color(0, 102, 51)); // Dark Green
+        setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
+        setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        return c;
+    }
+});
+    
     }
   
     public void displayReports() {
-    try {
-        java.sql.Connection conn = cfg.getConnection();
+    double grandTotal = 0;
+    int maxBooked = -1;
+    String topService = "None";
 
-        // We use [ s_id] because your scan showed a leading space in the column name
-        // We also use [tbl_services] and [tbl_bookings] to be safe
+    try {
+        java.sql.Connection conn = cfg.connectDB(); // Siguroha nga config method ni
         String sql = "SELECT ts.[ s_id], ts.s_name, " +
                      "COUNT(tb.b_id) AS total_booked, " +
-                     "SUM(CASE WHEN tb.b_total IS NULL THEN 0 ELSE tb.b_total END) AS total_revenue " +
+                     "SUM(CASE WHEN tb.b_status IN ('COMPLETED', 'APPROVED') THEN tb.b_total ELSE 0 END) AS total_revenue " +
                      "FROM tbl_services ts " +
                      "LEFT JOIN tbl_bookings tb ON ts.[ s_id] = tb.s_id " +
                      "GROUP BY ts.[ s_id], ts.s_name";
 
         java.sql.PreparedStatement pst = conn.prepareStatement(sql);
         java.sql.ResultSet rs = pst.executeQuery();
-
         DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
         model.setRowCount(0); 
 
         while (rs.next()) {
+            int bookedCount = rs.getInt("total_booked");
+            double revenue = rs.getDouble("total_revenue");
+            String sName = rs.getString("s_name");
+
             model.addRow(new Object[]{
-                rs.getInt(1),                                // ID
-                rs.getString(2),                             // Name
-                rs.getInt(3),                                // Booked Count
-                "₱" + String.format("%.2f", rs.getDouble(4)) // Revenue
+                rs.getInt(1),
+                sName,
+                bookedCount,
+                "₱" + String.format("%,.2f", revenue) // Naay comma (e.g., 1,000.00)
             });
+
+            grandTotal += revenue;
+            if (bookedCount > maxBooked && bookedCount > 0) {
+                maxBooked = bookedCount;
+                topService = sName;
+            }
         }
         
-        rs.close();
-        pst.close();
-        conn.close();
+        // Modern Style Updates
+        jLabel_TotalRevenue.setText("GRAND TOTAL: ₱" + String.format("%,.2f", grandTotal));
+        jLabel_MostBooked.setText("★ TOP PERFORMING SERVICE: " + topService.toUpperCase());
+
+        rs.close(); pst.close(); conn.close();
     } catch (Exception e) {
-        e.printStackTrace();
-        javax.swing.JOptionPane.showMessageDialog(null, "Database Error: " + e.getMessage());
+        System.out.println("Report Error: " + e.getMessage());
     }
 }
  
@@ -67,12 +102,30 @@ public class reports extends javax.swing.JFrame {
     
 private void setupTable() {
     String[] headers = {"Service ID", "Service Name", "Times Booked", "Total Revenue"};
-    jTable1.setModel(new javax.swing.table.DefaultTableModel(null, headers));
+    jTable1.setModel(new javax.swing.table.DefaultTableModel(null, headers) {
+        @Override
+        public boolean isCellEditable(int row, int column) { return false; }
+    });
     
-    // UI Styling
-    jTable1.setRowHeight(30);
+    // Header Style
+    jTable1.getTableHeader().setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 14));
     jTable1.getTableHeader().setBackground(new java.awt.Color(35, 66, 106));
     jTable1.getTableHeader().setForeground(java.awt.Color.WHITE);
+    jTable1.getTableHeader().setPreferredSize(new java.awt.Dimension(0, 40));
+    jTable1.getTableHeader().setOpaque(true);
+    
+    // Row Style
+    jTable1.setRowHeight(35);
+    jTable1.setShowGrid(false);
+    jTable1.setIntercellSpacing(new java.awt.Dimension(0, 0));
+    jTable1.setSelectionBackground(new java.awt.Color(220, 230, 245));
+
+    // Center alignment para sa tanang columns
+    javax.swing.table.DefaultTableCellRenderer centerRenderer = new javax.swing.table.DefaultTableCellRenderer();
+    centerRenderer.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+    for(int i = 0; i < jTable1.getColumnCount(); i++) {
+        jTable1.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+    }
 }
 
  private void applyAdminButtonStyle(javax.swing.JButton btn, java.awt.Color baseColor) {
@@ -130,10 +183,13 @@ private void setupTable() {
         jTable1 = new javax.swing.JTable();
         jPanel3 = new javax.swing.JPanel();
         jLabel2 = new javax.swing.JLabel();
+        jLabel_TotalRevenue = new javax.swing.JLabel();
+        jLabel_MostBooked = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
         jPanel1.setBackground(new java.awt.Color(255, 255, 255));
+        jPanel1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         jPanel2.setBackground(new java.awt.Color(35, 66, 106));
         jPanel2.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
@@ -163,6 +219,8 @@ private void setupTable() {
         });
         jPanel2.add(print, new org.netbeans.lib.awtextra.AbsoluteConstraints(90, 270, 150, 40));
 
+        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 50, 320, 600));
+
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, null, null, null},
@@ -175,6 +233,8 @@ private void setupTable() {
             }
         ));
         jScrollPane1.setViewportView(jTable1);
+
+        jPanel1.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(410, 200, 567, 233));
 
         jPanel3.setBackground(new java.awt.Color(35, 66, 106));
 
@@ -199,38 +259,23 @@ private void setupTable() {
                 .addContainerGap(37, Short.MAX_VALUE))
         );
 
-        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
-        jPanel1.setLayout(jPanel1Layout);
-        jPanel1Layout.setHorizontalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, 328, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 62, Short.MAX_VALUE)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 567, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(56, 56, 56))
-        );
-        jPanel1Layout.setVerticalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addGap(33, 33, 33)
-                .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 161, Short.MAX_VALUE)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 233, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(124, 124, 124))
-        );
+        jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(410, 60, -1, -1));
+
+        jLabel_TotalRevenue.setText("jLabel3");
+        jPanel1.add(jLabel_TotalRevenue, new org.netbeans.lib.awtextra.AbsoluteConstraints(760, 460, 220, 40));
+
+        jLabel_MostBooked.setText("jLabel3");
+        jPanel1.add(jLabel_MostBooked, new org.netbeans.lib.awtextra.AbsoluteConstraints(410, 460, 340, 40));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 1032, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 698, Short.MAX_VALUE)
         );
 
         pack();
@@ -284,6 +329,8 @@ private void setupTable() {
     private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel_MostBooked;
+    private javax.swing.JLabel jLabel_TotalRevenue;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;

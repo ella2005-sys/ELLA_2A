@@ -7,7 +7,6 @@ package ADMIN;
 
 import javax.swing.table.DefaultTableModel;
 import CONFIG.config;
-import USER.BookingForm;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.event.MouseAdapter;
@@ -15,118 +14,135 @@ import java.awt.event.MouseEvent;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.SwingConstants;
-
+import javax.swing.JOptionPane;
 
 public class Appointments extends javax.swing.JFrame {
     
     config cfg = new config();
 
-   
     public Appointments() {
         initComponents();
         new CONFIG.config().sessionGuard(this);
         setLocationRelativeTo(null);
     
-        // 1. SETUP TABLE FIRST
-    setupTable();
+        tableStyle();
     
-    // 2. COLORS
-    java.awt.Color navy = new java.awt.Color(35, 66, 106);
-    java.awt.Color brown = new java.awt.Color(106, 75, 35);
-    java.awt.Color warningRed = new java.awt.Color(180, 40, 40);
-    java.awt.Color refreshColor = new java.awt.Color(40, 100, 40); 
+        // Colors
+        java.awt.Color navy = new java.awt.Color(35, 66, 106);
+        java.awt.Color warningRed = new java.awt.Color(180, 40, 40);
 
-    // 3. APPLY STYLES (Diri nimo i-set ang design sa buttons)
-    applyAdminButtonStyle(jButton1, navy);    // Back to Home
-   
-    
-    styleAdminButtons(Edit, navy);
-    styleAdminButtons(Delete, warningRed); // Pula na ang Delete button
-    styleAdminButtons(jButton5, new java.awt.Color(60, 120, 60));// Search Button (Green)
-
-    // 4. LOAD DATA
-    displayAllAppointments();
-    
-     
-    }
-    
-     private void styleAdminButtons(javax.swing.JButton btn, java.awt.Color baseColor) {
-    btn.setBorderPainted(false);
-    btn.setFocusPainted(false);
-    btn.setContentAreaFilled(false);
-    btn.setOpaque(true);
-    btn.setBackground(baseColor);
-    btn.setForeground(java.awt.Color.WHITE);
-    btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-    btn.setFont(new java.awt.Font("Segoe UI Bold", java.awt.Font.PLAIN, 13));
-
-    btn.addMouseListener(new java.awt.event.MouseAdapter() {
+        // Apply Styles
+        applyAdminButtonStyle(jButton1, navy);    
+        styleAdminButtons(Edit, navy);
+        styleAdminButtons(Delete, warningRed); 
+        styleAdminButtons(jButton5, new java.awt.Color(60, 120, 60));
+        
+        // I-replace to imong karaan nga jTable1.getTableHeader().setDefaultRenderer(...) ani:
+        // 1. SETUP TABLE MODEL (Siguroha nga 7 columns ni para dili mo-ArrayIndexOutOfBounds)
+    // I-set ang model sa Appointments table
+   jTable1.setModel(new javax.swing.table.DefaultTableModel(
+        new Object [][] {},
+        new String [] { "ID", "User Name", "Service Name", "Date", "Address", "Amount", "Status" }
+    ) {
         @Override
-        public void mouseEntered(java.awt.event.MouseEvent evt) {
-            btn.setBackground(baseColor.brighter()); // Mo-light inig tapat sa mouse
-        }
-        @Override
-        public void mouseExited(java.awt.event.MouseEvent evt) {
-            btn.setBackground(baseColor); // Mobalik sa original color
+        public boolean isCellEditable(int row, int column) {
+            return false;
         }
     });
-}
 
-    public void displayAllAppointments() {
+    // 2. I-APPLY ANG DESIGN (Diri ra ta mag-usab sa hitsura)
+   
+
+        displayAllAppointments();
+    }
+    
+    private void styleAdminButtons(javax.swing.JButton btn, java.awt.Color baseColor) {
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setContentAreaFilled(false);
+        btn.setOpaque(true);
+        btn.setBackground(baseColor);
+        btn.setForeground(java.awt.Color.WHITE);
+        btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btn.setFont(new java.awt.Font("Segoe UI Bold", java.awt.Font.PLAIN, 13));
+
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                btn.setBackground(baseColor.brighter());
+            }
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                btn.setBackground(baseColor);
+            }
+        });
+    }
+
+   public void displayAllAppointments() {
     try {
-        CONFIG.config conf = new CONFIG.config();
+        config conf = new config();
         java.sql.Connection conn = conf.connectDB();
         
-        // SQL JOIN para makita ang tinuod nga names sa table
+        // Gigamit nato ang `` (backticks) para sa s_id kay naay space sa DB
         String sql = "SELECT b.b_id, u.user_name, s.s_name, b.b_date, b.b_address, b.b_total, b.b_status " +
                      "FROM tbl_bookings b " +
-                     "JOIN tbl_users u ON b.u_id = u.user_id " +
-                     "JOIN tbl_services s ON b.s_id = s.s_id";
+                     "LEFT JOIN tbl_users u ON b.u_id = u.user_id " +
+                     "LEFT JOIN tbl_services s ON b.s_id = s.` s_id`"; 
+        
+        // NOTE: Kung dili gihapon mo-work ang naay space, sulayi ni nga format sa JOIN:
+        // "LEFT JOIN tbl_services s ON b.s_id = s.\" s_id\""
         
         java.sql.PreparedStatement pst = conn.prepareStatement(sql);
         java.sql.ResultSet rs = pst.executeQuery();
+        
         DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
         model.setRowCount(0);
 
         while (rs.next()) {
             model.addRow(new Object[]{
                 rs.getString("b_id"),
-                rs.getString("user_name"), // Name sa Customer
-                rs.getString("s_name"),    // Name sa Service
+                rs.getString("user_name"),
+                rs.getString("s_name") != null ? rs.getString("s_name") : "No Service",
                 rs.getString("b_date"),
                 rs.getString("b_address"),
                 "₱" + rs.getString("b_total"),
                 rs.getString("b_status")
             });
         }
+        rs.close(); pst.close(); conn.close();
     } catch (Exception e) {
-        System.out.println("Display Error: " + e.getMessage());
+        System.out.println("Final Attempt Error: " + e.getMessage());
     }
 }
 
-    private void setupTable() {
-    String[] headers = {"ID", "Customer Name", "Service", "Date", "Address", "Amount", "Status"};
-    DefaultTableModel model = new DefaultTableModel(null, headers) {
-        @Override
-        public boolean isCellEditable(int row, int column) {
-            return false; // Dili ma-edit ang cells diretso sa table
-        }
-    };
-    jTable1.setModel(model);
-    
-    // Aesthetics - Para "Modern" ang look
-    jTable1.setRowHeight(35); // Mas dako gamay para dili pilit
-    jTable1.setShowGrid(false); // Tangtangon ang grid lines para limpyo
-    jTable1.setIntercellSpacing(new java.awt.Dimension(0, 0));
-    
-    // Header Style
+  
+    private void tableStyle() {
+    // 1. Header Design (Navy Blue)
+    jTable1.getTableHeader().setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 14));
     jTable1.getTableHeader().setBackground(new java.awt.Color(35, 66, 106));
     jTable1.getTableHeader().setForeground(java.awt.Color.WHITE);
-    jTable1.getTableHeader().setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 13));
-    jTable1.getTableHeader().setReorderingAllowed(false); // Dili ma-drag ang columns
-}
+    jTable1.getTableHeader().setPreferredSize(new java.awt.Dimension(0, 40));
+    jTable1.getTableHeader().setOpaque(true);
 
-private void applyAdminButtonStyle(JButton btn, Color baseColor) {
+    // 2. Row Design
+    jTable1.setRowHeight(35);
+    jTable1.setFont(new java.awt.Font("Segoe UI", 0, 12));
+    jTable1.setSelectionBackground(new java.awt.Color(220, 230, 245));
+    jTable1.setShowGrid(false);
+    jTable1.setIntercellSpacing(new java.awt.Dimension(0, 0));
+
+    // 3. Alignment (Center align para sa tanan nga naay sulod)
+    javax.swing.table.DefaultTableCellRenderer centerRenderer = new javax.swing.table.DefaultTableCellRenderer();
+    centerRenderer.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+    
+    // Dynamic loop para dili mag ArrayIndexOutOfBounds
+    for(int i = 0; i < jTable1.getColumnCount(); i++) {
+        jTable1.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+    }
+}
+    
+   
+    private void applyAdminButtonStyle(JButton btn, Color baseColor) {
         btn.setBorderPainted(false);
         btn.setFocusPainted(false);
         btn.setContentAreaFilled(false);
@@ -169,7 +185,7 @@ private void applyAdminButtonStyle(JButton btn, Color baseColor) {
         jTextField1 = new javax.swing.JTextField();
         jButton5 = new javax.swing.JButton();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
         jPanel1.setBackground(new java.awt.Color(255, 255, 255));
         jPanel1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
@@ -233,7 +249,7 @@ private void applyAdminButtonStyle(JButton btn, Color baseColor) {
 
         jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 40, 550, -1));
 
-        Edit.setText("Update");
+        Edit.setText("Confirm");
         Edit.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 EditActionPerformed(evt);
@@ -281,81 +297,96 @@ private void applyAdminButtonStyle(JButton btn, Color baseColor) {
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
-      String find = jTextField1.getText();
-    try {
-        CONFIG.config conf = new CONFIG.config();
-        java.sql.Connection conn = conf.connectDB();
-        
-        String sql = "SELECT b.b_id, u.user_name, s.s_name, b.b_date, b.b_address, b.b_total, b.b_status " +
-             "FROM tbl_bookings b " +
-             "JOIN tbl_users u ON b.u_id = u.user_id " +
-             "JOIN tbl_services s ON b.s_id = s.s_id"; // <-- Siguruha nga 's_id' jud ang naa sa tbl_services
-        
-        java.sql.PreparedStatement pst = conn.prepareStatement(sql);
-        pst.setString(1, "%" + find + "%");
-        pst.setString(2, "%" + find + "%");
-        pst.setString(3, "%" + find + "%");
-        
-        java.sql.ResultSet rs = pst.executeQuery();
-        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
-        model.setRowCount(0);
+     String find = jTextField1.getText();
+        try {
+            config conf = new config();
+            java.sql.Connection conn = conf.connectDB();
+            
+             String sql = "SELECT b.b_id, u.user_name, s.s_name, b.b_date, b.b_address, b.b_total, b.b_status " +
+                     "FROM tbl_bookings b " +
+                     "LEFT JOIN tbl_users u ON b.u_id = u.user_id " +
+                     "LEFT JOIN tbl_services s ON b.s_id = s.` s_id`"; 
+            
+            java.sql.PreparedStatement pst = conn.prepareStatement(sql);
+            pst.setString(1, "%" + find + "%");
+            pst.setString(2, "%" + find + "%");
+            pst.setString(3, "%" + find + "%");
+            
+            java.sql.ResultSet rs = pst.executeQuery();
+            DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+            model.setRowCount(0);
 
-        while (rs.next()) {
-            model.addRow(new Object[]{
-                rs.getString("b_id"),
-                rs.getString("user_name"),
-                rs.getString("s_name"),
-                rs.getString("b_date"),
-                rs.getString("b_address"),
-                "₱" + rs.getString("b_total"),
-                rs.getString("b_status")
-            });
+            while (rs.next()) {
+                model.addRow(new Object[]{
+                    rs.getString("b_id"),
+                    rs.getString("user_name"),
+                    rs.getString("s_name"),
+                    rs.getString("b_date"),
+                    rs.getString("b_address"),
+                    "₱" + rs.getString("b_total"),
+                    rs.getString("b_status")
+                });
+            }
+        } catch (Exception e) {
+            System.out.println("Search Error: " + e.getMessage());
         }
-    } catch (Exception e) {
-        System.out.println("Search Error: " + e.getMessage());
-    }
     }//GEN-LAST:event_jButton5ActionPerformed
 
     private void EditActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EditActionPerformed
       int row = jTable1.getSelectedRow();
-    if (row == -1) {
-        javax.swing.JOptionPane.showMessageDialog(this, "Palihug pili og booking sa table!");
-        return;
-    }
-    
-    String id = jTable1.getValueAt(row, 0).toString();
-    String currentStatus = jTable1.getValueAt(row, 6).toString();
-    
-    // Listahan sa Status choices
-    String[] options = {"APPROVED", "COMPLETED", "CANCELLED"};
-    int choice = javax.swing.JOptionPane.showOptionDialog(this, 
-            "Update status for Booking ID: " + id, 
-            "Update Status", 
-            javax.swing.JOptionPane.DEFAULT_OPTION, 
-            javax.swing.JOptionPane.QUESTION_MESSAGE, 
-            null, options, options[0]);
-
-    if (choice != -1) { // Kung naay gipili
-        String newStatus = options[choice];
-        try {
-            CONFIG.config conf = new CONFIG.config();
-            String sql = "UPDATE tbl_bookings SET b_status = ? WHERE b_id = ?";
-            java.sql.Connection conn = conf.connectDB();
-            java.sql.PreparedStatement pst = conn.prepareStatement(sql);
-            pst.setString(1, newStatus);
-            pst.setString(2, id);
-            
-            pst.executeUpdate();
-            javax.swing.JOptionPane.showMessageDialog(this, "Status updated to " + newStatus);
-            displayAllAppointments(); // Refresh table
-        } catch (Exception e) {
-            System.out.println("Update Error: " + e.getMessage());
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this, "Please choose a booking in the table!");
+            return;
         }
-    }
+        
+        String id = jTable1.getValueAt(row, 0).toString();
+        String[] options = {"APPROVED", "COMPLETED", "CANCELLED"};
+        int choice = JOptionPane.showOptionDialog(this, 
+                "Update status for Booking ID: " + id, "Update Status", 
+                JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, 
+                null, options, options[0]);
+
+        if (choice != -1) {
+            try {
+                config conf = new config();
+                String sql = "UPDATE tbl_bookings SET b_status = ? WHERE b_id = ?";
+                java.sql.Connection conn = conf.connectDB();
+                java.sql.PreparedStatement pst = conn.prepareStatement(sql);
+                pst.setString(1, options[choice]);
+                pst.setString(2, id);
+                pst.executeUpdate();
+                JOptionPane.showMessageDialog(this, "Status updated!");
+                displayAllAppointments();
+            } catch (Exception e) {
+                System.out.println("Update Error: " + e.getMessage());
+            }
+        }
     }//GEN-LAST:event_EditActionPerformed
 
     private void DeleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DeleteActionPerformed
-        // TODO add your handling code here:
+        int row = jTable1.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this, "Please pick a booking to delete!");
+            return;
+        }
+
+        String id = jTable1.getValueAt(row, 0).toString();
+        int confirm = JOptionPane.showConfirmDialog(this, "Sigurado ka i-delete ang Booking ID: " + id + "?", "Delete Confirmation", JOptionPane.YES_NO_OPTION);
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                config conf = new config();
+                String sql = "DELETE FROM tbl_bookings WHERE b_id = ?";
+                java.sql.Connection conn = conf.connectDB();
+                java.sql.PreparedStatement pst = conn.prepareStatement(sql);
+                pst.setString(1, id);
+                pst.executeUpdate();
+                JOptionPane.showMessageDialog(this, "Successfully Deleted!");
+                displayAllAppointments();
+            } catch (Exception e) {
+                System.out.println("Delete Error: " + e.getMessage());
+            }
+        }
     }//GEN-LAST:event_DeleteActionPerformed
 
     /**

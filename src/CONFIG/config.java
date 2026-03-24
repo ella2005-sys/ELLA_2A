@@ -234,6 +234,36 @@ public java.sql.ResultSet getData(String sql) throws java.sql.SQLException {
     return rs;
 }
 
+        public void deleteData(String sql) {
+    try {
+        PreparedStatement pst = getConnection().prepareStatement(sql);
+        int rowsDeleted = pst.executeUpdate();
+        
+        if (rowsDeleted > 0) {
+            javax.swing.JOptionPane.showMessageDialog(null, "Data deleted successfully!");
+        } else {
+            javax.swing.JOptionPane.showMessageDialog(null, "No record found to delete.");
+        }
+        
+        pst.close();
+    } catch (java.sql.SQLException e) {
+        javax.swing.JOptionPane.showMessageDialog(null, "Delete Error: " + e.getMessage());
+    }
+}
+
+        
+        public void updateData(String sql) {
+    try {
+        java.sql.PreparedStatement pst = getConnection().prepareStatement(sql);
+        int rowsUpdated = pst.executeUpdate();
+        if (rowsUpdated > 0) {
+            javax.swing.JOptionPane.showMessageDialog(null, "Successfully Updated!");
+        }
+        pst.close();
+    } catch (java.sql.SQLException e) {
+        System.out.println("Update Error: " + e.getMessage());
+    }
+}
     
 }
     

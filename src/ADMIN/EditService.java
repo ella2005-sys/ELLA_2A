@@ -20,7 +20,11 @@ public class EditService extends javax.swing.JFrame {
         initComponents();
         new CONFIG.config().sessionGuard(this);
         jTextField1.setEditable(false);
+        
+        
     }
+    
+    
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -198,8 +202,26 @@ public class EditService extends javax.swing.JFrame {
         );
 
         pack();
+        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
+    
+    
+    
+    // Kini nga method ang mo-dawat sa data gikan sa PROVIDER package
+public void setServiceData(String id, String name, String cat, String price, String status) {
+    // jTextField1 = ID
+    // jTextField2 = Name
+    // jComboBox1 = Category
+    // jTextField3 = Price
+    // jTextField4 = Status
+    
+    this.jTextField1.setText(id);
+    this.jTextField2.setText(name);
+    this.jComboBox1.setSelectedItem(cat); // Kay ComboBox man ni
+    this.jTextField3.setText(price);
+    this.jTextField4.setText(status);
+}
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
 try {
         CONFIG.config cfg = new CONFIG.config();

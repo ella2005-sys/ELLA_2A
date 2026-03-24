@@ -12,6 +12,7 @@ public class Userform extends javax.swing.JFrame {
      public String action = "Add"; // Kinahanglan naay default value para dili null
     public javax.swing.JFrame parentFrame; 
     config cfg = new config();
+    String destination = "";
 
     // I-update ang constructor para generic
     public Userform(javax.swing.JFrame parent) {
@@ -19,7 +20,10 @@ public class Userform extends javax.swing.JFrame {
     this.parentFrame = parent;
     setLocationRelativeTo(parent);
     jTextField1.setEnabled(false); 
-    new CONFIG.config().sessionGuard(this); // User ID field
+    new CONFIG.config().sessionGuard(this);
+    
+
+// User ID field
     }
     
     public Userform(usermanagement parent) {
@@ -30,41 +34,104 @@ public class Userform extends javax.swing.JFrame {
     }
 
     // Kani nga constructor ang mo-fetch sa data base sa ID
-      public Userform(String userId, javax.swing.JFrame parent) {
+    // Kani nga constructor ang mo-fetch sa data base sa ID
+    public Userform(String userId, javax.swing.JFrame parent) {
     initComponents();
     this.parentFrame = parent;
     this.action = "Update"; 
     setLocationRelativeTo(parent);
-    jTextField1.setEnabled(false); // ID should be read-only
+    jTextField1.setEnabled(false); 
+    // I-set ang hitsura sa placeholder
+user_pic.setText("+"); 
+user_pic.setFont(new java.awt.Font("Segoe UI", 1, 48)); // Himoon natong dako ang plus
+user_pic.setForeground(new java.awt.Color(200, 200, 200)); // Light gray para klaro sa brown
+user_pic.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+user_pic.setVerticalAlignment(javax.swing.SwingConstants.CENTER);
+
+// KANI ANG PINAKA-IMPORTANTE: Ang Border para makita ang box
+user_pic.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(255, 255, 255), 2));
+    
+    try {
+        // Siguraduha nga sakto ang path sa imong icon file
+        java.net.URL iconURL = getClass().getResource("/IMAGEES/add.png");
+        if (iconURL != null) {
+            javax.swing.ImageIcon initialIcon = new javax.swing.ImageIcon(iconURL);
+            java.awt.Image img = initialIcon.getImage().getScaledInstance(user_pic.getWidth(), user_pic.getHeight(), java.awt.Image.SCALE_SMOOTH);
+            user_pic.setIcon(new javax.swing.ImageIcon(img));
+        }
+        user_pic.setText(""); // Papasa ang text para icon ra makita
+        user_pic.setBorder(javax.swing.BorderFactory.createLineBorder(java.awt.Color.LIGHT_GRAY));
+    } catch (Exception e) {
+        System.out.println("Icon error: " + e.getMessage());
+    }
     
     try {
         config cfg = new config();
-        // Siguraduha nga ang SQL match sa imong table columns
         java.sql.ResultSet rs = cfg.getData("SELECT * FROM tbl_users WHERE user_id = '" + userId + "'");
         
         if(rs.next()){
-            // I-set ang text sa textfields gikan sa Database
             jTextField1.setText(rs.getString("user_id"));
-            jTextField2.setText(rs.getString("user_name"));
-            jTextField3.setText(rs.getString("user_email"));
-            jTextField4.setText(rs.getString("user_address"));
-            jTextField5.setText(rs.getString("user_number"));
-            jTextField7.setText(rs.getString("u_status"));
-            jTextField6.setText(rs.getString("user_role"));
+            // ... (ibitay ang uban nga fields diri) ...
             jTextField8.setText(rs.getString("user_password"));
             
-            // I-change ang UI labels para sa Update mode
+            // DIRI DAPIT ISULOD ANG IMAGE LOGIC:
+            destination = rs.getString("user_image"); // Siguroha nga naa ni sa imong DB column
+            if(destination != null && !destination.isEmpty()){
+                javax.swing.ImageIcon ii = new javax.swing.ImageIcon(destination);
+                java.awt.Image image = ii.getImage().getScaledInstance(user_pic.getWidth(), user_pic.getHeight(), java.awt.Image.SCALE_SMOOTH);
+                user_pic.setIcon(new javax.swing.ImageIcon(image));
+            }
+            
             jLabel1.setText("UPDATE USER/PROVIDER");
             AddUser.setText("UPDATE");
+           
+            
+            
         }
-        rs.close(); // Kanunay i-close para dili mo-leak ang connection
+        rs.close(); 
     } catch (Exception e) {
         System.out.println("Error fetching user: " + e.getMessage());
     }
 }
+      public void setPicture(javax.swing.JLabel label, String path) {
+    try {
+        javax.swing.ImageIcon icon = new javax.swing.ImageIcon(path);
+        java.awt.Image img = icon.getImage().getScaledInstance(label.getWidth(), label.getHeight(), java.awt.Image.SCALE_SMOOTH);
+        label.setIcon(new javax.swing.ImageIcon(img));
+    } catch (Exception e) {
+        System.out.println("Error setting picture: " + e.getMessage());
+    }
+}
+
     private Userform() {
       
     }
+    
+    public void copyFile(String sourcePath, String destinationPath) {
+    try {
+        java.nio.file.Path source = java.nio.file.Paths.get(sourcePath);
+        java.nio.file.Path target = java.nio.file.Paths.get(destinationPath);
+        java.nio.file.Files.copy(source, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+    } catch (java.io.IOException e) {
+        System.out.println("Error copying file: " + e.getMessage());
+    }
+}
+    
+    public void setDefaultIcon() {
+    // I-set ang path sa imong default icon (pananglitan "+" icon)
+    // Siguroha nga naa ni sa imong project folder
+    String defaultPath = "src/icons/add_user_photo.png"; 
+    
+    try {
+        javax.swing.ImageIcon ii = new javax.swing.ImageIcon(defaultPath);
+        java.awt.Image image = ii.getImage().getScaledInstance(user_pic.getWidth(), user_pic.getHeight(), java.awt.Image.SCALE_SMOOTH);
+        user_pic.setIcon(new javax.swing.ImageIcon(image));
+    } catch (Exception e) {
+        // Kung wala ang icon, butangan lang nato og text
+        user_pic.setText("+ ADD PHOTO");
+        user_pic.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+    }
+}
     
     public void setFields(String id, String name, String email, String address, String num, String status, String role, String pass) {
     jTextField1.setText(id);      // ID
@@ -104,8 +171,11 @@ public class Userform extends javax.swing.JFrame {
         jTextField7 = new javax.swing.JTextField();
         jLabel9 = new javax.swing.JLabel();
         jTextField8 = new javax.swing.JTextField();
+        jButton1 = new javax.swing.JButton();
+        jButton2 = new javax.swing.JButton();
+        user_pic = new javax.swing.JLabel();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
         jPanel1.setBackground(new java.awt.Color(106, 75, 35));
         jPanel1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
@@ -208,6 +278,25 @@ public class Userform extends javax.swing.JFrame {
         jTextField8.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
         jPanel1.add(jTextField8, new org.netbeans.lib.awtextra.AbsoluteConstraints(160, 380, 200, 25));
 
+        jButton1.setText("Browse");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton1ActionPerformed(evt);
+            }
+        });
+        jPanel1.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(530, 230, -1, -1));
+
+        jButton2.setText("Remove");
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton2ActionPerformed(evt);
+            }
+        });
+        jPanel1.add(jButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(660, 230, -1, -1));
+
+        user_pic.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(255, 255, 255)));
+        jPanel1.add(user_pic, new org.netbeans.lib.awtextra.AbsoluteConstraints(570, 110, 130, 100));
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -261,6 +350,32 @@ if (parentFrame instanceof usermanagement) {
 }
     }//GEN-LAST:event_AddUserActionPerformed
 
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+     javax.swing.JFileChooser browseImageFile = new javax.swing.JFileChooser();
+    javax.swing.filechooser.FileNameExtensionFilter fnef = new javax.swing.filechooser.FileNameExtensionFilter("IMAGES", "png", "jpg", "jpeg");
+    browseImageFile.addChoosableFileFilter(fnef);
+    
+    int showOpenDialogue = browseImageFile.showOpenDialog(null);
+    if (showOpenDialogue == javax.swing.JFileChooser.APPROVE_OPTION) {
+        java.io.File selectedImageFile = browseImageFile.getSelectedFile();
+        destination = selectedImageFile.getAbsolutePath();
+        
+        // 1. PAPASON ANG "+" NGA TEXT
+        user_pic.setText(""); 
+        
+        // 2. I-DISPLAY ANG PICTURE
+        javax.swing.ImageIcon ii = new javax.swing.ImageIcon(destination);
+        java.awt.Image image = ii.getImage().getScaledInstance(user_pic.getWidth(), user_pic.getHeight(), java.awt.Image.SCALE_SMOOTH);
+        user_pic.setIcon(new javax.swing.ImageIcon(image));
+    }
+    }//GEN-LAST:event_jButton1ActionPerformed
+
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+   user_pic.setIcon(null);         // Tangtangon ang picture
+    user_pic.setText("+");          // Ibalik ang plus sign
+    destination = "";
+    }//GEN-LAST:event_jButton2ActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -312,6 +427,8 @@ if (parentFrame instanceof usermanagement) {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton AddUser;
     private javax.swing.JButton Cancel;
+    private javax.swing.JButton jButton1;
+    private javax.swing.JButton jButton2;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
@@ -331,5 +448,6 @@ if (parentFrame instanceof usermanagement) {
     private javax.swing.JTextField jTextField6;
     private javax.swing.JTextField jTextField7;
     private javax.swing.JTextField jTextField8;
+    private javax.swing.JLabel user_pic;
     // End of variables declaration//GEN-END:variables
 }

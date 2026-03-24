@@ -106,7 +106,7 @@ private void styleBookingButton(javax.swing.JButton btn, java.awt.Color bg) {
         confirm = new javax.swing.JButton();
         cancel = new javax.swing.JButton();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
         jPanel3.setBackground(new java.awt.Color(106, 75, 35));
         jPanel3.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());

@@ -15,6 +15,12 @@ import java.awt.event.MouseEvent;
 import java.sql.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import java.awt.AlphaComposite;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
+import CONFIG.config;
 
 /**
  *
@@ -22,11 +28,11 @@ import javax.swing.table.DefaultTableModel;
  */
 public class admindashboard extends javax.swing.JFrame {
 
-    /**
-     * Creates new form admindashboard
-     */
+   config cfg = new config();
+    
 public admindashboard() {
     initComponents();
+    updateDashboardRevenue();
     
     // 1. Setup the Cards with Titles & Hover Effects
         // Top Row: Stats
@@ -74,7 +80,7 @@ public admindashboard() {
     }
     // Kung 'No' ang gi-click, wala'y mahitabo, pabilin ra sa dashboard
 });
-    setupCard(jPanel3, jLabel12, () -> {
+    setupCard(revenuePanel, rev_label, () -> {
         new reports().setVisible(true); 
     
     // 2. I-close ang current dashboard
@@ -108,6 +114,42 @@ public admindashboard() {
     recentActivityTable.setShowGrid(false);
     recentActivityTable.setIntercellSpacing(new java.awt.Dimension(0, 0));
     recentActivityTable.setBackground(java.awt.Color.WHITE);
+    
+    
+
+    // Tawgon ang method para ma-load ang picture sa imong label
+    displayProfilePicture(profile_pic);
+    profile_pic.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+    
+    profile_pic.addMouseListener(new java.awt.event.MouseAdapter() {
+    @Override
+    public void mouseClicked(java.awt.event.MouseEvent evt) {
+        // 1. Tawgon ang imong My Profile frame
+        // Siguroha nga 'adminprofile' ang saktong ngalan sa imong class
+        adminprofile profileFrame = new adminprofile(); 
+        profileFrame.setVisible(true);
+
+        // 2. I-close o i-hide ang current dashboard (optional)
+        // dispose(); 
+    }
+
+    @Override
+    public void mouseEntered(java.awt.event.MouseEvent evt) {
+        // Optional: Pwede nimo butangan og border para mo-highlight inig itunong ang mouse
+        profile_pic.setBorder(javax.swing.BorderFactory.createLineBorder(java.awt.Color.WHITE, 2));
+    }
+
+    @Override
+    public void mouseExited(java.awt.event.MouseEvent evt) {
+        // Tangtangon ang border inig layo sa mouse
+        profile_pic.setBorder(null);
+    }
+});
+    
+    // I-set ang Welcome message gamit ang imong Session name
+    // Welcome.setText("Welcome, Admin: " + CONFIG.Session.getName());
+
+
     
     // Style the ScrollPane to remove the old-school border
     jScrollPane1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(240, 240, 240)));
@@ -148,6 +190,8 @@ public admindashboard() {
         }
     });
 }
+
+
 
 // Modern Pill-style Status Renderer
 class ModernStatusRenderer extends javax.swing.table.DefaultTableCellRenderer {
@@ -290,13 +334,14 @@ class ModernStatusRenderer extends javax.swing.table.DefaultTableCellRenderer {
 
         // 4. REVENUE TODAY (Bag-ong Panel: lbl_revenue)
         // Gigamit ang b_total ug b_date base sa imong DB schema
-        String revQuery = "SELECT SUM(b_total) FROM tbl_bookings WHERE b_date = date('now') AND b_status = 'Approved'";
+        String revQuery = "SELECT SUM(b_total) FROM tbl_bookings"; // Tangtangon ang WHERE clause
         java.sql.ResultSet rsRev = st.executeQuery(revQuery);
-        if (rsRev.next()) {
+            if (rsRev.next()) {
             double total = rsRev.getDouble(1);
-            jLabel12.setFont(numFont);
-            jLabel12.setText(String.format("₱%.2f", total));
-        }
+            rev_label.setFont(numFont);
+    // Siguroha nga husto ang formatting
+            rev_label.setText(String.format("₱%,.2f", total));
+}
 
     } catch (java.sql.SQLException e) {
         System.out.println("Database Error: " + e.getMessage());
@@ -347,11 +392,78 @@ class ModernStatusRenderer extends javax.swing.table.DefaultTableCellRenderer {
     }
 }
    
+   private void displayProfilePicture(JLabel label) {
+    // 1. Usba ang path base sa kung asa ang imong .db file
+    String url = "jdbc:sqlite:hservice.db"; 
+    
+    // 2. Gi-update ang column names: user_image ug user_id
+    String sql = "SELECT user_image FROM tbl_users WHERE user_id = ?"; 
+
+    try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url);
+         java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        
+        pstmt.setInt(1, CONFIG.Session.getUserId()); 
+        java.sql.ResultSet rs = pstmt.executeQuery();
+
+        if (rs.next()) {
+            String imagePath = rs.getString("user_image");
+
+            if (imagePath != null && !imagePath.isEmpty()) {
+                java.io.File imgFile = new java.io.File(imagePath);
+                
+                if (imgFile.exists()) {
+                    java.awt.image.BufferedImage master = javax.imageio.ImageIO.read(imgFile);
+                    
+                    int diameter = Math.min(master.getWidth(), master.getHeight());
+                    java.awt.image.BufferedImage masked = new java.awt.image.BufferedImage(diameter, diameter, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+                    
+                    java.awt.Graphics2D g2 = masked.createGraphics();
+                    g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                    
+                    g2.fillOval(0, 0, diameter, diameter);
+                    g2.setComposite(java.awt.AlphaComposite.SrcIn);
+                    g2.drawImage(master, 0, 0, null);
+                    g2.dispose();
+
+                    label.setIcon(new javax.swing.ImageIcon(masked.getScaledInstance(label.getWidth(), label.getHeight(), java.awt.Image.SCALE_SMOOTH)));
+                    label.setText(""); 
+                    return;
+                }
+            }
+        }
+        
+        // Default icon kung blangko ang database
+        label.setIcon(new javax.swing.ImageIcon(getClass().getResource("/IMAGES/user-profile.png")));
+        
+    } catch (Exception e) {
+        // I-print ang error para makita nato sa console kung naay problema sa connection
+        System.out.println("Profile Pic Error: " + e.getMessage());
+    }
+}
    
+    public void updateDashboardRevenue() {
+    try {
+        java.sql.Connection conn = cfg.getConnection();
+        String sql = "SELECT SUM(b_total) AS total FROM tbl_bookings";
+        java.sql.PreparedStatement pst = conn.prepareStatement(sql);
+        java.sql.ResultSet rs = pst.executeQuery();
 
-    
-    
-
+        if (rs.next()) {
+            double total = rs.getDouble("total");
+            
+            // Kani nga line ang mo-link sa imong Design Label
+            // Siguroha nga walay space sa 'rev_label'
+            this.rev_label.setText("₱" + String.format("%,.2f", total));
+            
+            // I-print nato para ma-confirm sa Output
+            System.out.println("Displaying to UI: ₱" + total);
+        }
+        
+        rs.close(); pst.close(); conn.close();
+    } catch (Exception e) {
+        System.out.println("UI Update Error: " + e.getMessage());
+    }
+}
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -392,9 +504,10 @@ class ModernStatusRenderer extends javax.swing.table.DefaultTableCellRenderer {
         jPanel5 = new javax.swing.JPanel();
         jLabel6 = new javax.swing.JLabel();
         jLabel11 = new javax.swing.JLabel();
-        jPanel3 = new javax.swing.JPanel();
-        jLabel12 = new javax.swing.JLabel();
+        revenuePanel = new javax.swing.JPanel();
+        rev_label = new javax.swing.JLabel();
         jLabel13 = new javax.swing.JLabel();
+        profile_pic = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -530,7 +643,7 @@ class ModernStatusRenderer extends javax.swing.table.DefaultTableCellRenderer {
         jLabel9.setText("BOOKINGS");
         appointmentCountLabel.add(jLabel9, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 10, -1, -1));
 
-        jPanel1.add(appointmentCountLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(690, 140, 160, 140));
+        jPanel1.add(appointmentCountLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(690, 140, -1, 140));
         jPanel1.add(jLabel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(850, 40, 30, -1));
 
         recentActivityTable.setModel(new javax.swing.table.DefaultTableModel(
@@ -619,38 +732,42 @@ class ModernStatusRenderer extends javax.swing.table.DefaultTableCellRenderer {
 
         jPanel1.add(jPanel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(500, 330, 160, 140));
 
-        jPanel3.setBackground(new java.awt.Color(69, 123, 157));
+        revenuePanel.setBackground(new java.awt.Color(69, 123, 157));
 
-        jLabel12.setIcon(new javax.swing.ImageIcon(getClass().getResource("/IMAGES/wallet.png"))); // NOI18N
+        rev_label.setIcon(new javax.swing.ImageIcon(getClass().getResource("/IMAGES/wallet.png"))); // NOI18N
 
         jLabel13.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
         jLabel13.setForeground(new java.awt.Color(255, 255, 255));
         jLabel13.setText("REVENUE");
 
-        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
-        jPanel3.setLayout(jPanel3Layout);
-        jPanel3Layout.setHorizontalGroup(
-            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel3Layout.createSequentialGroup()
+        javax.swing.GroupLayout revenuePanelLayout = new javax.swing.GroupLayout(revenuePanel);
+        revenuePanel.setLayout(revenuePanelLayout);
+        revenuePanelLayout.setHorizontalGroup(
+            revenuePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(revenuePanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jLabel12, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(rev_label, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addContainerGap())
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-                .addContainerGap(44, Short.MAX_VALUE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, revenuePanelLayout.createSequentialGroup()
+                .addContainerGap(54, Short.MAX_VALUE)
                 .addComponent(jLabel13, javax.swing.GroupLayout.PREFERRED_SIZE, 77, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(39, 39, 39))
         );
-        jPanel3Layout.setVerticalGroup(
-            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
+        revenuePanelLayout.setVerticalGroup(
+            revenuePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, revenuePanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jLabel13)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 10, Short.MAX_VALUE)
-                .addComponent(jLabel12, javax.swing.GroupLayout.PREFERRED_SIZE, 76, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(rev_label, javax.swing.GroupLayout.PREFERRED_SIZE, 76, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(21, 21, 21))
         );
 
-        jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(690, 330, 160, 140));
+        jPanel1.add(revenuePanel, new org.netbeans.lib.awtextra.AbsoluteConstraints(690, 330, 170, 140));
+
+        profile_pic.setMaximumSize(new java.awt.Dimension(50, 50));
+        profile_pic.setPreferredSize(new java.awt.Dimension(65, 65));
+        jPanel1.add(profile_pic, new org.netbeans.lib.awtextra.AbsoluteConstraints(800, 30, 80, -1));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -778,7 +895,6 @@ class ModernStatusRenderer extends javax.swing.table.DefaultTableCellRenderer {
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
-    private javax.swing.JLabel jLabel12;
     private javax.swing.JLabel jLabel13;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
@@ -793,15 +909,17 @@ class ModernStatusRenderer extends javax.swing.table.DefaultTableCellRenderer {
     private javax.swing.JLabel jPane16;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
-    private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel5;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JLabel p;
+    private javax.swing.JLabel profile_pic;
     private javax.swing.JPanel providerCountLabel;
     private javax.swing.JButton providers;
     private javax.swing.JTable recentActivityTable;
     private javax.swing.JButton reports;
+    private javax.swing.JLabel rev_label;
+    private javax.swing.JPanel revenuePanel;
     private javax.swing.JPanel userCountLabel;
     // End of variables declaration//GEN-END:variables
 }

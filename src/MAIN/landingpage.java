@@ -78,7 +78,7 @@ public class landingpage extends javax.swing.JFrame {
         jLabel2.setFont(new java.awt.Font("Segoe UI Black", 0, 24)); // NOI18N
         jLabel2.setText("Home Services Made Easy");
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
         jPanel2.setBackground(new java.awt.Color(255, 255, 255));
         jPanel2.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
