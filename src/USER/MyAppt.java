@@ -6,103 +6,274 @@ import CONFIG.Session;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Font;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.SwingConstants;
 
 public class MyAppt extends javax.swing.JFrame {
 
-   
     CONFIG.config cfg = new CONFIG.config();
+    
     public MyAppt() {
         initComponents();
+        setupTable(); // Kini ang mo-apply sa tanang design
+        loadAppointments();
+        setLocationRelativeTo(null);
+        
+        Color navy = new Color(35, 66, 106);
+        
+        applyAdminButtonStyle(jButton1, navy);    // Users
+        applyAdminButtonStyle(viewdetails, navy); 
+        applyAdminButtonStyle(cancel, new Color(150, 0, 0));
        
-          setupTable();  
+     
         
-        setLocationRelativeTo(null); // Centers the window
+        
+        // I-setup ang choices
+    jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "All Status", "Pending", "Approved" }));
 
-    // Setup Table Headers
-    String[] headers = {"ID", "Service", "Date", "Address", "Amount", "Status"};
-    jTable1.setModel(new javax.swing.table.DefaultTableModel(new Object[][]{}, headers));
+// I-apply ang Navy Theme design
+    applyComboBoxStyle(jComboBox1);
     
-    // Modern Table Look
-    jTable1.setRowHeight(25);
-    jTable1.getTableHeader().setBackground(new java.awt.Color(35, 66, 106));
-    jTable1.getTableHeader().setForeground(java.awt.Color.BLACK);
-    
-  java.awt.Color navy = new java.awt.Color(35, 66, 106);
-    java.awt.Color logoutBrown = new java.awt.Color(106, 75, 35);
+    // 2. DESIGN SA MGA BUTTONS
+    applyAdminButtonStyle(search, new Color(35, 66, 106));
+    applyAdminButtonStyle(cancel, new Color(35, 66, 106));
+    applyAdminButtonStyle(viewdetails, new Color(35, 66, 106));
 
-    // Sidebar Menu Buttons
-    applyAdminButtonStyle(jButton1, navy); // Users
-    
-    loadAppointments();
-    }
-
-    
-    
-     private void setupTable() {
-        String[] headers = {"ID", "Service", "Date", "Address", "Amount", "Status"};
-        DefaultTableModel model = new DefaultTableModel(null, headers);
-        jTable1.setModel(model);
-
-        jTable1.setRowHeight(25);
-        jTable1.getTableHeader().setBackground(new java.awt.Color(35, 66, 106));
-        jTable1.getTableHeader().setForeground(java.awt.Color.WHITE);
+    // 3. SEARCH AS YOU TYPE (Document Listener)
+    // Inig type nimo sa jTextField1, mo-trigger dayon ang searchTable()
+    jTextField1.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+        @Override
+        public void insertUpdate(javax.swing.event.DocumentEvent e) { searchTable(); }
+        @Override
+        public void removeUpdate(javax.swing.event.DocumentEvent e) { searchTable(); }
+        @Override
+        public void changedUpdate(javax.swing.event.DocumentEvent e) { searchTable(); }
+    });
     }
     
- public void loadAppointments() {
+    private void searchTable() {
+    String searchText = jTextField1.getText().toLowerCase();
+    String statusFilter = jComboBox1.getSelectedItem().toString();
+
     try {
-        java.sql.Connection conn = cfg.getConnection();
+        Connection conn = cfg.getConnection();
+        int currentId = Session.getUserId();
         
-        // This is the filter: it gets User ID 22 from your session
-        int currentId = CONFIG.Session.getUserId(); 
+        // Mag-JOIN ta para ma-search ang Service Name bisan naa sa laing table
+        String sql = "SELECT b.b_id, s.s_name, b.b_date, b.b_address, b.b_total, b.b_status " +
+                     "FROM tbl_bookings b " +
+                     "JOIN tbl_services s ON b.s_id = s.\" s_id\" " +
+                     "WHERE b.u_id = ? AND (LOWER(s.s_name) LIKE ? OR LOWER(b.b_address) LIKE ?)";
 
-        // Direct query from tbl_bookings - no JOINS to cause errors
-        String sql = "SELECT b_id, s_id, b_date, b_address, b_total, b_status FROM tbl_bookings WHERE u_id = ?";
+        // Kung naay gipili nga status (dili "All Status"), idugang sa query
+        if (!statusFilter.equals("All Status")) {
+            sql += " AND b.b_status = ?";
+        }
 
-        java.sql.PreparedStatement pst = conn.prepareStatement(sql);
-        pst.setInt(1, currentId); 
-        java.sql.ResultSet rs = pst.executeQuery();
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setInt(1, currentId);
+        pst.setString(2, "%" + searchText + "%");
+        pst.setString(3, "%" + searchText + "%");
 
-        javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) jTable1.getModel();
-        model.setRowCount(0); // This clears the empty rows
+        if (!statusFilter.equals("All Status")) {
+            pst.setString(4, statusFilter);
+        }
+
+        ResultSet rs = pst.executeQuery();
+        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+        model.setRowCount(0);
 
         while (rs.next()) {
             model.addRow(new Object[]{
                 rs.getString("b_id"),
-                "Service ID: " + rs.getString("s_id"), // Displaying ID number to avoid Join errors
+                rs.getString("s_name"),
                 rs.getString("b_date"),
                 rs.getString("b_address"),
-                rs.getString("b_total"),
-                rs.getString("b_status") // Shows Pending, Approved, etc.
+                "₱" + rs.getString("b_total"),
+                rs.getString("b_status")
             });
         }
+        rs.close();
+        pst.close();
     } catch (Exception e) {
-        System.out.println("Error: " + e.getMessage());
+        System.out.println("Search Error: " + e.getMessage());
     }
 }
- 
- private void applyAdminButtonStyle(javax.swing.JButton btn, java.awt.Color baseColor) {
-    btn.setBorderPainted(false);
-    btn.setFocusPainted(false);
-    btn.setContentAreaFilled(false); 
-    btn.setOpaque(true); 
-    btn.setBackground(baseColor);
-    btn.setForeground(java.awt.Color.WHITE);
-    btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-    btn.setFont(new java.awt.Font("Segoe UI Semibold", java.awt.Font.PLAIN, 14));
     
-    btn.addMouseListener(new java.awt.event.MouseAdapter() {
-        @Override
-        public void mouseEntered(java.awt.event.MouseEvent evt) {
-            btn.setBackground(baseColor.brighter()); 
-        }
-        @Override
-        public void mouseExited(java.awt.event.MouseEvent evt) {
-            btn.setBackground(baseColor);
-        }
-    });
+    private void applyComboBoxStyle(javax.swing.JComboBox<String> combo) {
+    combo.setFont(new Font("Segoe UI", Font.BOLD, 12));
+    combo.setBackground(Color.WHITE); // Puti ang background para limpyo
+    combo.setForeground(new Color(35, 66, 106)); // Navy ang text
+    combo.setBorder(javax.swing.BorderFactory.createLineBorder(new Color(35, 66, 106), 1));
+    
+    // Para mawala ang karaan nga "arrow" design (Optional: Depende sa Look and Feel)
+    combo.setFocusable(false);
+    
+    // I-center ang text sa sulod sa dropdown
+    ((javax.swing.JLabel)combo.getRenderer()).setHorizontalAlignment(javax.swing.JLabel.CENTER);
 }
+
+    
+    private void setupTable() {
+    // 1. Headers (Pareha sa udashboard)
+    String[] headers = {"ID", "Service", "Date", "Address", "Amount", "Status"};
+    DefaultTableModel model = new DefaultTableModel(null, headers) {
+        @Override
+        public boolean isCellEditable(int row, int column) {
+            return false;
+        }
+    };
+    jTable1.setModel(model);
+
+    // 2. NAVY HEADER DESIGN (Navy Background + White Font)
+    Color navy = new Color(35, 66, 106);
+    jTable1.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+    jTable1.getTableHeader().setPreferredSize(new java.awt.Dimension(0, 35));
+    jTable1.getTableHeader().setReorderingAllowed(false);
+
+    // Custom Header Renderer para mapugos ang Navy color sa font ug background
+    DefaultTableCellRenderer headerRenderer = new DefaultTableCellRenderer();
+    headerRenderer.setBackground(navy);
+    headerRenderer.setForeground(Color.WHITE);
+    headerRenderer.setHorizontalAlignment(javax.swing.JLabel.CENTER);
+
+    for (int i = 0; i < jTable1.getColumnCount(); i++) {
+        jTable1.getTableHeader().getColumnModel().getColumn(i).setHeaderRenderer(headerRenderer);
+    }
+
+    // 3. EQUAL/BALANCED COLUMN WIDTHS (Para han-ay tan-awon)
+    jTable1.getColumnModel().getColumn(0).setPreferredWidth(50);  // ID
+    jTable1.getColumnModel().getColumn(1).setPreferredWidth(120); // Service
+    jTable1.getColumnModel().getColumn(2).setPreferredWidth(100); // Date
+    jTable1.getColumnModel().getColumn(3).setPreferredWidth(120); // Address
+    jTable1.getColumnModel().getColumn(4).setPreferredWidth(80);  // Amount
+    jTable1.getColumnModel().getColumn(5).setPreferredWidth(100); // Status
+
+    // 4. TABLE BODY LOOK
+    jTable1.setRowHeight(25); // Pareha sa udashboard row height
+    jTable1.setShowGrid(true);
+    jTable1.setGridColor(new Color(230, 230, 230));
+    jTable1.setSelectionBackground(new Color(220, 230, 240));
+
+    // 5. CENTER TEXT SA TANAN COLUMNS & STATUS COLORS
+    DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer() {
+        @Override
+        public java.awt.Component getTableCellRendererComponent(javax.swing.JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            java.awt.Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            setHorizontalAlignment(javax.swing.JLabel.CENTER);
+            
+            // Default font para sa body
+            c.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            
+            // Status Color Logic (Column 5)
+            if (column == 5 && value != null) {
+                String status = value.toString();
+                if (status.equalsIgnoreCase("Pending")) {
+                    c.setForeground(new Color(255, 140, 0)); // Dark Orange
+                } else if (status.equalsIgnoreCase("Approved")) {
+                    c.setForeground(new Color(0, 153, 51)); // Green
+                } else {
+                    c.setForeground(Color.BLACK);
+                }
+            } else {
+                c.setForeground(Color.BLACK);
+            }
+
+            // Maintain selection color maski naay status color
+            if (isSelected) {
+                c.setForeground(table.getSelectionForeground());
+            }
+            
+            return c;
+        }
+    };
+
+    for (int i = 0; i < jTable1.getColumnCount(); i++) {
+        jTable1.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+    }
+}
+        // Apply style sa button
+     
+
+    public void loadAppointments() {
+        try {
+            Connection conn = cfg.getConnection();
+            int currentId = Session.getUserId();
+            String sql = "SELECT b_id, s_id, b_date, b_address, b_total, b_status FROM tbl_bookings WHERE u_id = ?";
+            PreparedStatement pst = conn.prepareStatement(sql);
+            pst.setInt(1, currentId);
+            ResultSet rs = pst.executeQuery();
+
+            DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+            model.setRowCount(0);
+
+            while (rs.next()) {
+                int serviceId = rs.getInt("s_id");
+                String serviceName = "Unknown Service";
+
+                try {
+                    // Note: Gamita ang \" s_id\" kung wala pa nimo na-rename ang column sa DB
+                    String serviceSql = "SELECT s_name FROM tbl_services WHERE \" s_id\" = ?";
+                    PreparedStatement pstService = conn.prepareStatement(serviceSql);
+                    pstService.setInt(1, serviceId);
+                    ResultSet rsService = pstService.executeQuery();
+                    if (rsService.next()) {
+                        serviceName = rsService.getString("s_name");
+                    }
+                    rsService.close();
+                    pstService.close();
+                } catch (Exception e) {
+                    System.out.println("Service Name Error: " + e.getMessage());
+                }
+
+                model.addRow(new Object[]{
+                    rs.getString("b_id"),
+                    serviceName,
+                    rs.getString("b_date"),
+                    rs.getString("b_address"),
+                    "₱" + rs.getString("b_total"),
+                    rs.getString("b_status")
+                });
+            }
+            rs.close();
+            pst.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void applyAdminButtonStyle(JButton btn, Color baseColor) {
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setContentAreaFilled(false);
+        btn.setOpaque(true);
+        btn.setBackground(baseColor);
+        btn.setForeground(Color.WHITE);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setHorizontalAlignment(SwingConstants.LEFT);
+        btn.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
+
+        btn.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent evt) {
+                btn.setBackground(baseColor.brighter());
+                btn.setBorder(BorderFactory.createMatteBorder(0, 5, 0, 0, Color.WHITE));
+            }
+            @Override
+            public void mouseExited(MouseEvent evt) {
+                btn.setBackground(baseColor);
+                btn.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
+            }
+        });
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -117,20 +288,26 @@ public class MyAppt extends javax.swing.JFrame {
         jPanel2 = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
         jButton1 = new javax.swing.JButton();
+        cancel = new javax.swing.JButton();
+        viewdetails = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
         jPanel3 = new javax.swing.JPanel();
         jLabel2 = new javax.swing.JLabel();
+        jTextField1 = new javax.swing.JTextField();
+        search = new javax.swing.JButton();
+        jComboBox1 = new javax.swing.JComboBox<>();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
         jPanel1.setBackground(new java.awt.Color(255, 255, 255));
+        jPanel1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         jPanel2.setBackground(new java.awt.Color(35, 66, 106));
         jPanel2.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/IMAGES/Blue White Modern Minimalist Interior Designer Personal Branding Logo(1)(1).jpg"))); // NOI18N
-        jPanel2.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(55, 20, -1, -1));
+        jPanel2.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 20, -1, -1));
 
         jButton1.setBackground(new java.awt.Color(35, 66, 106));
         jButton1.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
@@ -141,7 +318,25 @@ public class MyAppt extends javax.swing.JFrame {
                 jButton1ActionPerformed(evt);
             }
         });
-        jPanel2.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 140, 160, 30));
+        jPanel2.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 150, 220, 30));
+
+        cancel.setText("Cancel Booking");
+        cancel.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cancelActionPerformed(evt);
+            }
+        });
+        jPanel2.add(cancel, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 230, 220, 30));
+
+        viewdetails.setText("View Details");
+        viewdetails.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                viewdetailsActionPerformed(evt);
+            }
+        });
+        jPanel2.add(viewdetails, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 310, 220, -1));
+
+        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 30, 281, 580));
 
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -155,6 +350,8 @@ public class MyAppt extends javax.swing.JFrame {
             }
         ));
         jScrollPane1.setViewportView(jTable1);
+
+        jPanel1.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 260, 490, 350));
 
         jPanel3.setBackground(new java.awt.Color(35, 66, 106));
 
@@ -173,48 +370,40 @@ public class MyAppt extends javax.swing.JFrame {
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-                .addContainerGap(24, Short.MAX_VALUE)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addGap(21, 21, 21)
                 .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 31, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(19, 19, 19))
+                .addContainerGap(22, Short.MAX_VALUE))
         );
 
-        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
-        jPanel1.setLayout(jPanel1Layout);
-        jPanel1Layout.setHorizontalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, 281, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 61, Short.MAX_VALUE)
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(47, 47, 47))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(79, 79, 79)
-                        .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
-        );
-        jPanel1Layout.setVerticalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addContainerGap(17, Short.MAX_VALUE)
-                .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(44, 44, 44)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 318, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(60, 60, 60))
-        );
+        jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(400, 60, -1, -1));
+        jPanel1.add(jTextField1, new org.netbeans.lib.awtextra.AbsoluteConstraints(640, 220, 130, 30));
+
+        search.setText("Search");
+        search.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                searchActionPerformed(evt);
+            }
+        });
+        jPanel1.add(search, new org.netbeans.lib.awtextra.AbsoluteConstraints(770, 220, 90, 30));
+
+        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        jComboBox1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jComboBox1ActionPerformed(evt);
+            }
+        });
+        jPanel1.add(jComboBox1, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 220, 140, 30));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 884, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 652, Short.MAX_VALUE)
         );
 
         pack();
@@ -225,6 +414,61 @@ public class MyAppt extends javax.swing.JFrame {
     dash.setVisible(true);
     this.dispose();
     }//GEN-LAST:event_jButton1ActionPerformed
+
+    private void cancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelActionPerformed
+       int row = jTable1.getSelectedRow();
+    
+    if (row == -1) {
+        javax.swing.JOptionPane.showMessageDialog(null, "Please select a booking to cancel.");
+        return;
+    }
+
+    // Kuhaa ang ID gikan sa first column (index 0)
+    String id = jTable1.getValueAt(row, 0).toString();
+    String service = jTable1.getValueAt(row, 1).toString();
+
+    // Confirmation Dialog
+    int confirm = javax.swing.JOptionPane.showConfirmDialog(null, 
+            "Are you sure you want to cancel your booking for " + service + "?", 
+            "Cancel Booking", javax.swing.JOptionPane.YES_NO_OPTION);
+
+    if (confirm == javax.swing.JOptionPane.YES_OPTION) {
+        try {
+            // Option A: DELETE ang record (Kini ang kasagaran sa projects)
+            String sql = "DELETE FROM tbl_bookings WHERE b_id = ?";
+            
+            /* // Option B: UPDATE status to 'Cancelled' (Mas maayo kung gusto nimo naay history)
+            String sql = "UPDATE tbl_bookings SET b_status = 'Cancelled' WHERE b_id = ?";
+            */
+
+            java.sql.Connection conn = cfg.getConnection();
+            java.sql.PreparedStatement pst = conn.prepareStatement(sql);
+            pst.setString(1, id);
+
+            int result = pst.executeUpdate();
+            if (result > 0) {
+                javax.swing.JOptionPane.showMessageDialog(null, "Booking cancelled successfully!");
+                loadAppointments(); // I-refresh ang table para mawala ang gi-cancel
+            }
+            
+            pst.close();
+        } catch (Exception e) {
+            javax.swing.JOptionPane.showMessageDialog(null, "Error: " + e.getMessage());
+        }
+    }
+    }//GEN-LAST:event_cancelActionPerformed
+
+    private void viewdetailsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewdetailsActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_viewdetailsActionPerformed
+
+    private void searchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_searchActionPerformed
+        searchTable();
+    }//GEN-LAST:event_searchActionPerformed
+
+    private void jComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1ActionPerformed
+        searchTable();
+    }//GEN-LAST:event_jComboBox1ActionPerformed
 
     /**
      * @param args the command line arguments
@@ -262,7 +506,9 @@ public class MyAppt extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton cancel;
     private javax.swing.JButton jButton1;
+    private javax.swing.JComboBox<String> jComboBox1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JPanel jPanel1;
@@ -270,5 +516,8 @@ public class MyAppt extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable jTable1;
+    private javax.swing.JTextField jTextField1;
+    private javax.swing.JButton search;
+    private javax.swing.JButton viewdetails;
     // End of variables declaration//GEN-END:variables
 }

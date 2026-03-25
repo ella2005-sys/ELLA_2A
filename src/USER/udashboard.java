@@ -7,114 +7,219 @@ package USER;
 
 import ADMIN.usermanagement;
 import MAIN.landingpage;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JOptionPane;
+import javax.swing.SwingConstants;
 
 
 public class udashboard extends javax.swing.JFrame {
 
-    public udashboard() {
-        initComponents();       
-    applyModernFont(jLabel_Welcome, 18, true);
-    jLabel_Welcome.setForeground(java.awt.Color.WHITE);
+   public udashboard() {
+    initComponents();
+    
+     Color navy = new Color(35, 66, 106);
+     Color logoutBrown = new Color(106, 75, 35);
+    
+    applyAdminButtonStyle(jButton1, navy);    // Users
+    applyAdminButtonStyle(BookAService, navy);  // Providers
+    applyAdminButtonStyle(jButton3, navy); 
+    applyAdminButtonStyle(jButton5, navy);   
+    applyAdminButtonStyle(jButton4, navy);// Profile
+    applyAdminButtonStyle(jButton6, logoutBrown);
+    
+    styleAdminButtons(search, new java.awt.Color(60, 120, 60));// Logout
+    
+    // 1. Core Functions
+    new CONFIG.config().sessionGuard(this); 
+    jLabel_Welcome.setText("Welcome, Customer: " + CONFIG.Session.getName());
 
-    // 2. Sidebar Buttons - Semi-bold and cleaner
-    applyModernFont(jButton1, 14, true);     // Home
-    applyModernFont(BookAService, 14, true); // Book Service
-    applyModernFont(jButton5, 14, true);     // Profile
-    
-    // 3. The Dashboard Title
-    applyModernFont(jLabel4, 28, true); // CUSTOMER DASHBOARD
-    
-    // 4. The Table Header (Crucial for a "Non-Plain" look)
-    tbl_available_services.getTableHeader().setFont(new java.awt.Font("Segoe UI Semibold", java.awt.Font.PLAIN, 14));
-        
-        // 1. Table Spacing and Font
-    tbl_available_services.setRowHeight(35); // Makes rows taller and modern
+    // 2. Table Header Styling (Navy Blue & White Font)
+    tbl_available_services.getTableHeader().setDefaultRenderer(new javax.swing.table.DefaultTableCellRenderer() {
+        @Override
+        public java.awt.Component getTableCellRendererComponent(javax.swing.JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            javax.swing.JLabel label = (javax.swing.JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            label.setBackground(new java.awt.Color(35, 66, 106)); // Navy Blue
+            label.setForeground(java.awt.Color.WHITE); // White Text
+            label.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 14));
+            label.setHorizontalAlignment(javax.swing.JLabel.CENTER);
+            label.setOpaque(true);
+            label.setBorder(javax.swing.BorderFactory.createMatteBorder(0, 0, 1, 1, java.awt.Color.WHITE));
+            return label;
+        }
+    });
+
+    // 3. Table Body Styling
+    tbl_available_services.setRowHeight(35);
     tbl_available_services.setFont(new java.awt.Font("Segoe UI", 0, 14));
-    tbl_available_services.setShowGrid(false); // Removes the old-school grid lines
+    tbl_available_services.setShowGrid(false);
     tbl_available_services.setIntercellSpacing(new java.awt.Dimension(0, 0));
-
-// 2. Modern Blue Header
-    tbl_available_services.getTableHeader().setBackground(new java.awt.Color(35, 66, 106)); // Your Navy Blue
-    tbl_available_services.getTableHeader().setForeground(java.awt.Color.WHITE);
-    tbl_available_services.getTableHeader().setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 14));
-    tbl_available_services.getTableHeader().setPreferredSize(new java.awt.Dimension(100, 40));
-
-// 3. Selection Color
-    tbl_available_services.setSelectionBackground(new java.awt.Color(106, 75, 35)); // Your Brown color for selection
+    tbl_available_services.setDefaultEditor(Object.class, null); // Disable editing
+    tbl_available_services.setSelectionBackground(new java.awt.Color(106, 75, 35)); // Brown Selection
     tbl_available_services.setSelectionForeground(java.awt.Color.WHITE);
 
-    modernizeButton(jButton1);      // Home
-    modernizeButton(BookAService);  // Book a Service
-    modernizeButton(jButton3);      // Appointments
-    modernizeButton(jButton4);      // History
-    modernizeButton(jButton5);      // Profile
-    
-    // Style the Logout button differently (Reddish-brown)
-    modernizeButton(jButton6);
-    jButton6.setBackground(new java.awt.Color(106, 75, 35));
-     
-    
-    jComboBox1.setBackground(new java.awt.Color(255, 255, 255)); // White background
-    jComboBox1.setForeground(new java.awt.Color(35, 66, 106)); // Navy text
-    jComboBox1.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
+    // 4. JComboBox Styling (Modern Look)
+    jComboBox1.setBackground(java.awt.Color.WHITE);
+    jComboBox1.setForeground(new java.awt.Color(35, 66, 106));
     jComboBox1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(35, 66, 106), 1));
-        
-        new CONFIG.config().sessionGuard(this); // Ensure user is logged in
-        jLabel_Welcome.setText("Customer: " + CONFIG.Session.getName());
-        loadAvailableServices();
+    ((javax.swing.JLabel)jComboBox1.getRenderer()).setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+
+    // 5. Load Data
+    loadAvailableServices(); 
+    displayCustomerStats();
+    centerTableText(); 
+}
+   
+   private void centerTableText() {
+    javax.swing.table.DefaultTableCellRenderer centerRenderer = new javax.swing.table.DefaultTableCellRenderer();
+    centerRenderer.setHorizontalAlignment(javax.swing.JLabel.CENTER);
+    
+    // I-apply sa tanan columns (usba ang numero base sa kapila ka columns imong table)
+    for(int i = 0; i < tbl_available_services.getColumnCount(); i++){
+        tbl_available_services.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
     }
     
-    private void styleButton(javax.swing.JButton btn) {
-    btn.setBorderPainted(false);
-    btn.setFocusPainted(false);
-    btn.setContentAreaFilled(true);
-    btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+    // 6. Data Loading
     
-    btn.addMouseListener(new java.awt.event.MouseAdapter() {
-        public void mouseEntered(java.awt.event.MouseEvent evt) {
-            btn.setBackground(new java.awt.Color(45, 86, 136)); // Slightly lighter blue
-        }
-        public void mouseExited(java.awt.event.MouseEvent evt) {
-            btn.setBackground(new java.awt.Color(35, 66, 106)); // Original Navy Blue
-        }
-    });
 }
-    
-    
-    private void modernizeButton(javax.swing.JButton btn) {
-    // 1. Remove the default 'old' look
+   
+   private void styleAdminButtons(javax.swing.JButton btn, java.awt.Color baseColor) {
     btn.setBorderPainted(false);
     btn.setFocusPainted(false);
-    btn.setContentAreaFilled(false); // Makes it opaque/transparent-ready
-    btn.setOpaque(true); 
+    btn.setContentAreaFilled(false);
+    btn.setOpaque(true);
+    btn.setBackground(baseColor);
+    btn.setForeground(java.awt.Color.WHITE);
     btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-    
-    // 2. Set the modern font
-    btn.setFont(new java.awt.Font("Segoe UI Semibold", java.awt.Font.PLAIN, 16));
-    
-    // 3. Add Hover Interactivity
-    btn.addMouseListener(new java.awt.event.MouseAdapter() {
-        @Override
-        public void mouseEntered(java.awt.event.MouseEvent evt) {
-            // Lighter blue/opacity effect when hovering
-            btn.setBackground(new java.awt.Color(45, 86, 136)); 
-        }
+    btn.setFont(new java.awt.Font("Segoe UI Bold", java.awt.Font.PLAIN, 13));
 
+    btn.addMouseListener(new java.awt.event.MouseAdapter() {
+        @Override
+        public void mouseEntered(java.awt.event.MouseEvent evt) {
+            btn.setBackground(baseColor.brighter()); // Mo-light inig tapat sa mouse
+        }
         @Override
         public void mouseExited(java.awt.event.MouseEvent evt) {
-            // Return to original navy blue
-            btn.setBackground(new java.awt.Color(35, 66, 106));
+            btn.setBackground(baseColor); // Mobalik sa original color
         }
     });
 }
-    
-    private void applyModernFont(javax.swing.JComponent comp, int size, boolean isBold) {
-    // Segoe UI is the standard "Modern Professional" font for Windows apps
-    String fontName = "Segoe UI";
-    int style = isBold ? java.awt.Font.BOLD : java.awt.Font.PLAIN;
-    comp.setFont(new java.awt.Font(fontName, style, size));
+   
+ public void loadAvailableServices() {
+    try {
+        CONFIG.config conf = new CONFIG.config();
+        
+        // Gigamitan nako og "*" para makuha tanan column nga naa sa imong DB karon
+        String sql = "SELECT * FROM tbl_services WHERE s_status = 'Available' OR s_status = 'Active'";
+        
+        // 1. Gamiton nato ang getData method nimo para makuha ang ResultSet
+        java.sql.ResultSet rs = conf.getData(sql);
+        
+        // 2. KANI ANG SECRET: Ayaw gamita ang displayData!
+        // Gamita ang displayResultSet (manual loop) nga naa sa imong config.java
+        // Kay kini naggamit og DefaultTableModel, dili DbUtils nga sige'g error.
+        conf.displayResultSet(rs, tbl_available_services);
+        
+    } catch (Exception e) {
+        // I-show ang error para mahibal-an nato og ngano
+        javax.swing.JOptionPane.showMessageDialog(null, "Display Error: " + e.getMessage());
+    }
 }
+    
+    public void displayCustomerStats() {
+    try {
+        CONFIG.config conf = new CONFIG.config();
+        // 1. Kuhaon ang ID sa user nga naka-login karon gikan sa Session
+        int loggedInUser = CONFIG.Session.getUserId(); 
+
+        // 2. SQL Query: Ihapon ang bookings sa 'u_id' nga match sa loggedInUser
+        // Base sa imong tbl_bookings structure
+        String sql = "SELECT COUNT(*) FROM tbl_bookings WHERE u_id = " + loggedInUser;
+        
+        java.sql.ResultSet rs = conf.getData(sql);
+        if (rs.next()) {
+            // 3. I-display ang resulta sa imong label
+            int count = rs.getInt(1);
+            lbl_booking_count.setText("" + count); 
+        }
+    } catch (Exception e) {
+        System.out.println("Stats Error: " + e.getMessage());
+    }
+    
+    try {
+    CONFIG.config conf = new CONFIG.config();
+    int loggedInUser = CONFIG.Session.getUserId(); // Kuhaon ang ID sa user
+
+    // SQL: I-sum ang 'b_total' gikan sa tbl_bookings para sa maong user
+    String spentSql = "SELECT SUM(b_total) FROM tbl_bookings WHERE u_id = " + loggedInUser;
+    
+    java.sql.ResultSet rsSpent = conf.getData(spentSql);
+    if (rsSpent.next()) {
+        double total = rsSpent.getDouble(1);
+        
+        // I-format ang numero para naay Pesos sign ug duha ka decimal places
+        lbl_total_spent.setText("₱" + String.format("%.2f", total));
+    }
+    } catch (Exception e) {
+    System.out.println("Spent Stats Error: " + e.getMessage());
+    }
+    
+    try {
+    CONFIG.config conf = new CONFIG.config();
+    int loggedInUser = CONFIG.Session.getUserId(); // Kuhaon ang ID sa user gikan sa session
+
+    // SQL: Kuhaon ang 'u_status' gikan sa tbl_users para sa maong user
+    String statusSql = "SELECT u_status FROM tbl_users WHERE user_id = " + loggedInUser;
+    
+    java.sql.ResultSet rsStatus = conf.getData(statusSql);
+    if (rsStatus.next()) {
+        String status = rsStatus.getString("u_status");
+        
+        // I-display ang status (e.g., "Active", "Pending", o "Approved")
+        lbl_status.setText(status);
+        
+        // Optional: Usban ang kolor base sa status
+        if(status.equalsIgnoreCase("Active") || status.equalsIgnoreCase("Approved")){
+            lbl_status.setForeground(new java.awt.Color(0, 153, 0)); // Green kung Active
+        } else {
+            lbl_status.setForeground(java.awt.Color.RED); // Red kung naay issue
+        }
+    }
+} catch (Exception e) {
+    System.out.println("Status Error: " + e.getMessage());
+}
+}
+    
+    
+    
+   private void applyAdminButtonStyle(JButton btn, Color baseColor) {
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setContentAreaFilled(false);
+        btn.setOpaque(true);
+        btn.setBackground(baseColor);
+        btn.setForeground(Color.WHITE);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setHorizontalAlignment(SwingConstants.LEFT);
+        btn.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
+
+        btn.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent evt) {
+                btn.setBackground(baseColor.brighter());
+                btn.setBorder(BorderFactory.createMatteBorder(0, 5, 0, 0, Color.WHITE));
+            }
+            @Override
+            public void mouseExited(MouseEvent evt) {
+                btn.setBackground(baseColor);
+                btn.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
+            }
+        });
+    }
     
     
     
@@ -143,21 +248,7 @@ public class udashboard extends javax.swing.JFrame {
         this.dispose();
     }
        
-       
-  public void loadAvailableServices() {
-    try {
-        CONFIG.config conf = new CONFIG.config();
-        // Use "*" to grab all columns. This avoids the "no such column" error.
-        String sql = "SELECT * FROM tbl_services";
-        
-        conf.displayData(sql, tbl_available_services); 
-        
-    } catch (Exception e) {
-        // This will now tell us if the TABLE name itself is the problem
-        javax.swing.JOptionPane.showMessageDialog(null, "Display Error: " + e.getMessage());
-    }
-}
-    
+     
     
     /**
      * This method is called from within the constructor to initialize the form.
@@ -179,12 +270,29 @@ public class udashboard extends javax.swing.JFrame {
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
-        jLabel_Welcome = new javax.swing.JLabel();
-        jPanel3 = new javax.swing.JPanel();
-        jLabel4 = new javax.swing.JLabel();
         jScrollPane1 = new javax.swing.JScrollPane();
         tbl_available_services = new javax.swing.JTable();
         jComboBox1 = new javax.swing.JComboBox<>();
+        jLabel4 = new javax.swing.JLabel();
+        jPanel4 = new javax.swing.JPanel();
+        jLabel5 = new javax.swing.JLabel();
+        lbl_booking_count = new javax.swing.JLabel();
+        jPanel5 = new javax.swing.JPanel();
+        jLabel6 = new javax.swing.JLabel();
+        lbl_total_spent = new javax.swing.JLabel();
+        jPanel6 = new javax.swing.JPanel();
+        jLabel7 = new javax.swing.JLabel();
+        lbl_status = new javax.swing.JLabel();
+        jPanel3 = new javax.swing.JPanel();
+        jLabel8 = new javax.swing.JLabel();
+        jLabel12 = new javax.swing.JLabel();
+        jLabel_Welcome = new javax.swing.JLabel();
+        jTextField1 = new javax.swing.JTextField();
+        search = new javax.swing.JButton();
+        jPanel7 = new javax.swing.JPanel();
+        jLabel9 = new javax.swing.JLabel();
+        jLabel10 = new javax.swing.JLabel();
+        jLabel11 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -203,7 +311,7 @@ public class udashboard extends javax.swing.JFrame {
                 jButton1ActionPerformed(evt);
             }
         });
-        jPanel2.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 240, 145, -1));
+        jPanel2.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(25, 240, 260, -1));
 
         BookAService.setBackground(new java.awt.Color(35, 66, 106));
         BookAService.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
@@ -214,7 +322,7 @@ public class udashboard extends javax.swing.JFrame {
                 BookAServiceActionPerformed(evt);
             }
         });
-        jPanel2.add(BookAService, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 300, 145, -1));
+        jPanel2.add(BookAService, new org.netbeans.lib.awtextra.AbsoluteConstraints(25, 300, 260, -1));
 
         jButton3.setBackground(new java.awt.Color(35, 66, 106));
         jButton3.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
@@ -225,13 +333,13 @@ public class udashboard extends javax.swing.JFrame {
                 jButton3ActionPerformed(evt);
             }
         });
-        jPanel2.add(jButton3, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 360, -1, -1));
+        jPanel2.add(jButton3, new org.netbeans.lib.awtextra.AbsoluteConstraints(25, 360, 260, -1));
 
         jButton4.setBackground(new java.awt.Color(35, 66, 106));
         jButton4.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
         jButton4.setForeground(new java.awt.Color(255, 255, 255));
         jButton4.setText("Service History");
-        jPanel2.add(jButton4, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 420, 145, -1));
+        jPanel2.add(jButton4, new org.netbeans.lib.awtextra.AbsoluteConstraints(25, 420, 260, -1));
 
         jButton5.setBackground(new java.awt.Color(35, 66, 106));
         jButton5.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
@@ -242,7 +350,7 @@ public class udashboard extends javax.swing.JFrame {
                 jButton5ActionPerformed(evt);
             }
         });
-        jPanel2.add(jButton5, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 480, 145, -1));
+        jPanel2.add(jButton5, new org.netbeans.lib.awtextra.AbsoluteConstraints(25, 480, 260, -1));
 
         jButton6.setBackground(new java.awt.Color(35, 66, 106));
         jButton6.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
@@ -253,7 +361,7 @@ public class udashboard extends javax.swing.JFrame {
                 jButton6ActionPerformed(evt);
             }
         });
-        jPanel2.add(jButton6, new org.netbeans.lib.awtextra.AbsoluteConstraints(110, 580, -1, 30));
+        jPanel2.add(jButton6, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 640, 160, 30));
         jPanel2.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(174, 133, -1, -1));
 
         jLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/IMAGES/Blue White Modern Minimalist Interior Designer Personal Branding Logo(1)(1).jpg"))); // NOI18N
@@ -264,22 +372,7 @@ public class udashboard extends javax.swing.JFrame {
         jLabel3.setText("MENU");
         jPanel2.add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 200, -1, -1));
 
-        jLabel_Welcome.setFont(new java.awt.Font("Segoe UI Black", 0, 18)); // NOI18N
-        jLabel_Welcome.setForeground(new java.awt.Color(204, 255, 255));
-        jLabel_Welcome.setText("Welcome,");
-        jPanel2.add(jLabel_Welcome, new org.netbeans.lib.awtextra.AbsoluteConstraints(90, 130, 110, 26));
-
-        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 310, 640));
-
-        jPanel3.setBackground(new java.awt.Color(35, 66, 106));
-        jPanel3.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
-
-        jLabel4.setFont(new java.awt.Font("Segoe UI Black", 0, 36)); // NOI18N
-        jLabel4.setForeground(new java.awt.Color(255, 255, 255));
-        jLabel4.setText("CUSTOMER DASHBOARD");
-        jPanel3.add(jLabel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 10, 460, 60));
-
-        jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(350, 10, 490, 80));
+        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 50, 310, 690));
 
         tbl_available_services.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -294,7 +387,7 @@ public class udashboard extends javax.swing.JFrame {
         ));
         jScrollPane1.setViewportView(tbl_available_services);
 
-        jPanel1.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(350, 190, 490, 170));
+        jPanel1.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 510, 550, 230));
 
         jComboBox1.setBackground(new java.awt.Color(35, 66, 106));
         jComboBox1.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
@@ -305,17 +398,162 @@ public class udashboard extends javax.swing.JFrame {
                 jComboBox1ActionPerformed(evt);
             }
         });
-        jPanel1.add(jComboBox1, new org.netbeans.lib.awtextra.AbsoluteConstraints(350, 160, 190, -1));
+        jPanel1.add(jComboBox1, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 470, 280, 30));
+
+        jLabel4.setFont(new java.awt.Font("Segoe UI Black", 0, 36)); // NOI18N
+        jLabel4.setForeground(new java.awt.Color(35, 66, 106));
+        jLabel4.setText("CUSTOMER DASHBOARD");
+        jPanel1.add(jLabel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(360, 60, 460, 60));
+
+        jPanel4.setBackground(new java.awt.Color(255, 111, 94));
+        jPanel4.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+
+        jLabel5.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
+        jLabel5.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel5.setText("MY BOOKINGS");
+        jPanel4.add(jLabel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(18, 13, 118, -1));
+
+        lbl_booking_count.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
+        lbl_booking_count.setIcon(new javax.swing.ImageIcon(getClass().getResource("/IMAGES/clipboard.png"))); // NOI18N
+        jPanel4.add(lbl_booking_count, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 30, 120, 75));
+
+        jPanel1.add(jPanel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(360, 120, 160, 120));
+
+        jPanel5.setBackground(new java.awt.Color(78, 205, 196));
+        jPanel5.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+
+        jLabel6.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
+        jLabel6.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel6.setText("TOTAL SPENT");
+        jPanel5.add(jLabel6, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 13, 137, -1));
+
+        lbl_total_spent.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        lbl_total_spent.setIcon(new javax.swing.ImageIcon(getClass().getResource("/IMAGES/thin.png"))); // NOI18N
+        jPanel5.add(lbl_total_spent, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 20, 150, 110));
+
+        jPanel1.add(jPanel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(540, 120, -1, 120));
+
+        jPanel6.setBackground(new java.awt.Color(255, 201, 113));
+        jPanel6.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+
+        jLabel7.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
+        jLabel7.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel7.setText("ACCOUNT STATUS");
+        jPanel6.add(jLabel7, new org.netbeans.lib.awtextra.AbsoluteConstraints(12, 13, -1, -1));
+
+        lbl_status.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        lbl_status.setIcon(new javax.swing.ImageIcon(getClass().getResource("/IMAGES/user (5).png"))); // NOI18N
+        jPanel6.add(lbl_status, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 30, 170, 86));
+
+        jPanel1.add(jPanel6, new org.netbeans.lib.awtextra.AbsoluteConstraints(720, 120, 170, 120));
+
+        jPanel3.setBackground(new java.awt.Color(230, 57, 70));
+        jPanel3.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jPanel3MouseClicked(evt);
+            }
+        });
+
+        jLabel8.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
+        jLabel8.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel8.setText("LOGOUT");
+
+        jLabel12.setIcon(new javax.swing.ImageIcon(getClass().getResource("/IMAGES/logout (3).png"))); // NOI18N
+
+        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
+        jPanel3.setLayout(jPanel3Layout);
+        jPanel3Layout.setHorizontalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addGap(54, 54, 54)
+                .addComponent(jLabel12, javax.swing.GroupLayout.DEFAULT_SIZE, 94, Short.MAX_VALUE)
+                .addContainerGap())
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addGap(46, 46, 46)
+                .addComponent(jLabel8)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+        jPanel3Layout.setVerticalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addGap(7, 7, 7)
+                .addComponent(jLabel8)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel12)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+
+        jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(540, 250, 160, 120));
+
+        jLabel_Welcome.setFont(new java.awt.Font("Segoe Script", 0, 18)); // NOI18N
+        jLabel_Welcome.setForeground(new java.awt.Color(35, 66, 106));
+        jLabel_Welcome.setText("Welcome,");
+        jPanel1.add(jLabel_Welcome, new org.netbeans.lib.awtextra.AbsoluteConstraints(360, 40, 350, 40));
+
+        jTextField1.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                jTextField1KeyReleased(evt);
+            }
+        });
+        jPanel1.add(jTextField1, new org.netbeans.lib.awtextra.AbsoluteConstraints(690, 470, 120, 30));
+
+        search.setText("Search");
+        search.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                searchActionPerformed(evt);
+            }
+        });
+        jPanel1.add(search, new org.netbeans.lib.awtextra.AbsoluteConstraints(810, 470, 110, 30));
+
+        jPanel7.setBackground(new java.awt.Color(109, 89, 122));
+
+        jLabel9.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
+        jLabel9.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel9.setText("MY PROFILE");
+
+        jLabel10.setIcon(new javax.swing.ImageIcon(getClass().getResource("/IMAGES/user-profile.png"))); // NOI18N
+
+        javax.swing.GroupLayout jPanel7Layout = new javax.swing.GroupLayout(jPanel7);
+        jPanel7.setLayout(jPanel7Layout);
+        jPanel7Layout.setHorizontalGroup(
+            jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel7Layout.createSequentialGroup()
+                .addGap(32, 32, 32)
+                .addComponent(jLabel9, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(33, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel7Layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jLabel10, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
+        );
+        jPanel7Layout.setVerticalGroup(
+            jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel7Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jLabel9)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel10, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGap(31, 31, 31))
+        );
+
+        jPanel1.add(jPanel7, new org.netbeans.lib.awtextra.AbsoluteConstraints(360, 250, 160, 120));
+
+        jLabel11.setFont(new java.awt.Font("Segoe UI Black", 0, 18)); // NOI18N
+        jLabel11.setForeground(new java.awt.Color(35, 66, 106));
+        jLabel11.setText("To book an appointment, please select in the table");
+        jPanel1.add(jLabel11, new org.netbeans.lib.awtextra.AbsoluteConstraints(410, 410, 510, 50));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 849, Short.MAX_VALUE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 940, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 779, Short.MAX_VALUE)
         );
 
         pack();
@@ -386,6 +624,76 @@ String selectedCategory = jComboBox1.getSelectedItem().toString();
     // Close the current dashboard so it doesn't stay open in the background
     this.dispose();
     }//GEN-LAST:event_jButton3ActionPerformed
+
+    private void jPanel3MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jPanel3MouseClicked
+      // 1. Maghimo og Confirm Dialog (Yes/No)
+    int confirm = javax.swing.JOptionPane.showConfirmDialog(null, 
+            "Are you sure you want to logout?", "Logout Confirmation", 
+            javax.swing.JOptionPane.YES_NO_OPTION, 
+            javax.swing.JOptionPane.QUESTION_MESSAGE);
+    
+    // 2. Kung 'Yes' ang gi-click sa user
+    if (confirm == javax.swing.JOptionPane.YES_OPTION) {
+        // I-clear ang session (optional pero maayo ni para safe)
+        // CONFIG.Session.setUserId(0); 
+
+        // 3. I-open ang Landing Page
+        MAIN.landingpage lp = new MAIN.landingpage();
+        lp.setVisible(true);
+        lp.setLocationRelativeTo(null); // Center ang window
+        
+        // 4. I-close ang kani nga Dashboard
+        this.dispose();
+    }
+    }//GEN-LAST:event_jPanel3MouseClicked
+
+    private void searchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_searchActionPerformed
+        String searchText = jTextField1.getText(); // Kuhaon ang gi-type sa user sa box
+    
+    try {
+        CONFIG.config conf = new CONFIG.config();
+        
+        // Gikuha nako ang 'provider_name' sa query kay 'provider_id' naman imong gamit
+        // Gi-search nato sa s_name (Service) ug s_category (Category)
+        String sql = "SELECT * FROM tbl_services WHERE (s_name LIKE '%" + searchText + "%' "
+                   + "OR s_category LIKE '%" + searchText + "%') "
+                   + "AND (s_status = 'Available' OR s_status = 'Active')";
+        
+        // Gamita ang displayResultSet (manual loop) para safe
+        java.sql.ResultSet rs = conf.getData(sql);
+        conf.displayResultSet(rs, tbl_available_services);
+        
+        // I-recenter ang text para limpyo tan-awon
+        centerTableText();
+        
+    } catch (Exception e) {
+        javax.swing.JOptionPane.showMessageDialog(null, "Search Error: " + e.getMessage());
+    }
+    }//GEN-LAST:event_searchActionPerformed
+
+    private void jTextField1KeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextField1KeyReleased
+        String searchText = jTextField1.getText(); 
+    
+    try {
+        CONFIG.config conf = new CONFIG.config();
+        
+        // Gigamitan nato og LIKE '%...%' para maski 'p' ra i-type, 
+        // mugawas tanan naay letter 'p' sa Service Name o Category.
+        String sql = "SELECT * FROM tbl_services WHERE (s_name LIKE '%" + searchText + "%' "
+                   + "OR s_category LIKE '%" + searchText + "%') "
+                   + "AND (s_status = 'Available' OR s_status = 'Active')";
+        
+        // Gamita ang displayResultSet (manual loop) para sigurado nga walay error
+        java.sql.ResultSet rs = conf.getData(sql);
+        conf.displayResultSet(rs, tbl_available_services);
+        
+        // I-center balik ang text sa table para dili magkatibulaag
+        centerTableText();
+        
+    } catch (Exception e) {
+        System.out.println("Live Search Error: " + e.getMessage());
+    }
+    }//GEN-LAST:event_jTextField1KeyReleased
 /**
      * @param args the command line arguments
      */ // <--- You need this closing comment tag
@@ -410,14 +718,31 @@ String selectedCategory = jComboBox1.getSelectedItem().toString();
     private javax.swing.JButton jButton6;
     private javax.swing.JComboBox<String> jComboBox1;
     private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel10;
+    private javax.swing.JLabel jLabel11;
+    private javax.swing.JLabel jLabel12;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
+    private javax.swing.JLabel jLabel8;
+    private javax.swing.JLabel jLabel9;
     private javax.swing.JLabel jLabel_Welcome;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
+    private javax.swing.JPanel jPanel4;
+    private javax.swing.JPanel jPanel5;
+    private javax.swing.JPanel jPanel6;
+    private javax.swing.JPanel jPanel7;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JTextField jTextField1;
+    private javax.swing.JLabel lbl_booking_count;
+    private javax.swing.JLabel lbl_status;
+    private javax.swing.JLabel lbl_total_spent;
+    private javax.swing.JButton search;
     private javax.swing.JTable tbl_available_services;
     // End of variables declaration//GEN-END:variables
 }

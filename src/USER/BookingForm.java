@@ -1,7 +1,14 @@
 
 package USER;
 
+
 import ADMIN.Appointments;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.*;
+import java.awt.geom.RoundRectangle2D;
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 
 
 public class BookingForm extends javax.swing.JFrame {
@@ -9,8 +16,15 @@ public class BookingForm extends javax.swing.JFrame {
     int selectedServiceId; 
     double selectedServicePrice;
     
+    // Signature Colors
+    Color navy = new Color(35, 66, 106);
+    Color brown = new Color(106, 75, 35);
+    Color bgLight = new Color(245, 245, 245);
+
+    
+    javax.swing.JFrame callerFrame;
+    
     // Sa babaw, ilisdi ang 'javax.swing.JFrame parent;' ani:
-javax.swing.JFrame callerFrame; 
 
 // Update imong Constructor:
 public BookingForm(javax.swing.JFrame frame) {
@@ -24,82 +38,73 @@ public BookingForm(javax.swing.JFrame frame) {
     
     jLabel2.setText("Admin Booking Mode");
     jLabel3.setText("Manual Entry");
-    styleBookingUI();
+    styleForm();
 }
+
 
     
     public BookingForm(int serviceId, String serviceName, double price) {
-    initComponents();
-    new CONFIG.config().sessionGuard(this);
-   this.selectedServiceId = serviceId; // Save the ID passed from the dashboard
-    this.selectedServicePrice = price;
+        initComponents();
+        this.selectedServiceId = serviceId;
+        this.selectedServicePrice = price;
+        
+        // Display Text
+        jLabel2.setText("Service: " + serviceName);
+        jLabel3.setText("Total Price: ₱" + price);
+        
+        styleForm();
+        setLocationRelativeTo(null);
+    }
 
-    // Display the info on your labels
-    // Note: You should give your labels better names in Design View 
-    // for easier coding (e.g., lbl_name instead of jLabel2)
-    jLabel2.setText("<html><font color='#555555'>Service:</font> <font color='#23426A'>" + serviceName + "</font></html>");
-    jLabel3.setText("<html><font color='#555555'>Total Price:</font> <font color='#27ae60'><b>₱" + price + "</b></font></html>");
-    
-    styleBookingUI();
-}
+    private void styleForm() {
+        // 1. Main Panels
+        jPanel3.setBackground(brown); 
+        jPanel2.setBackground(navy); 
+        
+        // 2. Title Styling
+        jLabel1.setFont(new Font("Segoe UI Black", Font.BOLD, 28));
+        jLabel1.setForeground(Color.WHITE);
 
-    private void styleBookingUI() {
-    // 1. Background (Light color ni, so dapat dark ang text)
-    jPanel3.setBackground(new java.awt.Color(248, 249, 250)); 
-    jPanel2.setBackground(new java.awt.Color(35, 66, 106)); 
+        // 3. Labels Styling (White & Modern Font)
+        Font labelFont = new Font("Segoe UI Semibold", Font.PLAIN, 16);
+        JLabel[] labels = {jLabel2, jLabel3, jLabel4, jLabel5};
+        for (JLabel lbl : labels) {
+            lbl.setForeground(Color.WHITE);
+            lbl.setFont(labelFont);
+        }
 
-    // 2. I-force ang color sa tanan labels para makita jud sila
-    java.awt.Color darkText = new java.awt.Color(50, 50, 50); // Dark Gray
-    
-    jLabel1.setForeground(java.awt.Color.WHITE); // Title (kay Navy man ang header)
-    jLabel2.setForeground(darkText); // Service Name
-    jLabel3.setForeground(darkText); // Price
-    jLabel4.setForeground(darkText); // Date
-    jLabel5.setForeground(darkText); // Address
-    
-    // Modernize labels font
-    java.awt.Font modernFont = new java.awt.Font("Segoe UI Semibold", java.awt.Font.PLAIN, 16);
-    jLabel2.setFont(modernFont);
-    jLabel3.setFont(modernFont);
-    jLabel4.setFont(modernFont);
-    jLabel5.setFont(modernFont);
-    
-    // Ang uban nimo nga code (Inputs, Buttons, etc.)
-    // ... (keep your existing spinner and button styles) ...
-}
- 
- 
-    
-private void styleButton(javax.swing.JButton btn, java.awt.Color bg) {
-    btn.setBackground(bg);
-    btn.setFocusPainted(false);
-    btn.setBorderPainted(false);
-    btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-    btn.setFont(new java.awt.Font("Segoe UI Bold", java.awt.Font.PLAIN, 15));
-}
-   
-   private void styleInput(javax.swing.JComponent input) {
-    input.setBorder(javax.swing.BorderFactory.createCompoundBorder(
-        javax.swing.BorderFactory.createLineBorder(new java.awt.Color(200, 200, 200), 1),
-        javax.swing.BorderFactory.createEmptyBorder(5, 10, 5, 10)));
-    input.setBackground(java.awt.Color.WHITE);
-}
+        // 4. Input Fields Styling (White with Rounded Padding)
+        jTextField1.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.WHITE, 1),
+            BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
+        
+        // 5. Button Styling
+        styleModernButton(confirm, navy, Color.WHITE);
+        styleModernButton(cancel, Color.WHITE, brown);
+    }
 
-private void styleBookingButton(javax.swing.JButton btn, java.awt.Color bg) {
-    btn.setBackground(bg);
-    btn.setForeground(java.awt.Color.WHITE);
-    btn.setFocusPainted(false);
-    btn.setBorderPainted(false);
-    btn.setFont(new java.awt.Font("Segoe UI Bold", java.awt.Font.PLAIN, 16));
-    btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-    
-    // Hover Animation
-    btn.addMouseListener(new java.awt.event.MouseAdapter() {
-        public void mouseEntered(java.awt.event.MouseEvent evt) { btn.setBackground(bg.brighter()); }
-        public void mouseExited(java.awt.event.MouseEvent evt) { btn.setBackground(bg); }
-    });
-}
-    
+    private void styleModernButton(JButton btn, Color bg, Color fg) {
+        btn.setBackground(bg);
+        btn.setForeground(fg);
+        btn.setFocusPainted(false);
+        btn.setBorder(new EmptyBorder(10, 20, 10, 20));
+        btn.setFont(new Font("Segoe UI Bold", Font.PLAIN, 16));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        // Hover Effect
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                btn.setBackground(bg.brighter());
+                if(bg.equals(Color.WHITE)) btn.setBackground(new Color(230, 230, 230));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                btn.setBackground(bg);
+            }
+        });
+    }
+
+
     
     
     @SuppressWarnings("unchecked")
@@ -174,7 +179,7 @@ private void styleBookingButton(javax.swing.JButton btn, java.awt.Color bg) {
         jPanel3.add(jTextField1, new org.netbeans.lib.awtextra.AbsoluteConstraints(240, 380, 249, 41));
 
         confirm.setBackground(new java.awt.Color(35, 66, 106));
-        confirm.setFont(new java.awt.Font("Segoe UI Black", 0, 24)); // NOI18N
+        confirm.setFont(new java.awt.Font("Segoe UI Black", 0, 20)); // NOI18N
         confirm.setForeground(new java.awt.Color(255, 255, 255));
         confirm.setText("CONFIRM BOOKING");
         confirm.addActionListener(new java.awt.event.ActionListener() {
@@ -182,13 +187,18 @@ private void styleBookingButton(javax.swing.JButton btn, java.awt.Color bg) {
                 confirmActionPerformed(evt);
             }
         });
-        jPanel3.add(confirm, new org.netbeans.lib.awtextra.AbsoluteConstraints(100, 490, 270, 70));
+        jPanel3.add(confirm, new org.netbeans.lib.awtextra.AbsoluteConstraints(160, 490, 240, 70));
 
         cancel.setBackground(new java.awt.Color(35, 66, 106));
-        cancel.setFont(new java.awt.Font("Segoe UI Black", 0, 24)); // NOI18N
+        cancel.setFont(new java.awt.Font("Segoe UI Black", 0, 20)); // NOI18N
         cancel.setForeground(new java.awt.Color(255, 255, 255));
         cancel.setText("CANCEL");
-        jPanel3.add(cancel, new org.netbeans.lib.awtextra.AbsoluteConstraints(400, 490, 270, 70));
+        cancel.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cancelActionPerformed(evt);
+            }
+        });
+        jPanel3.add(cancel, new org.netbeans.lib.awtextra.AbsoluteConstraints(420, 490, 240, 70));
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -257,6 +267,12 @@ if (callerFrame != null && callerFrame instanceof Appointments) {
         javax.swing.JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
     }
     }//GEN-LAST:event_confirmActionPerformed
+
+    private void cancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelActionPerformed
+      // Kani ang redirect padulong sa User Dashboard
+        new udashboard().setVisible(true);
+        this.dispose();
+    }//GEN-LAST:event_cancelActionPerformed
 
     /**
      * @param args the command line arguments
