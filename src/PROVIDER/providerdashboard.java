@@ -17,42 +17,48 @@ public class providerdashboard extends javax.swing.JFrame {
      * Creates new form providerdashboard
      */
     public providerdashboard() {
-        initComponents();
-        
-        // Color Palette
+    initComponents();
+
+    // Color Palette
     java.awt.Color navy = new java.awt.Color(35, 66, 106);
     java.awt.Color logoutBrown = new java.awt.Color(106, 75, 35);
 
-    // Apply Styles to all buttons
-    applyAdminButtonStyle(MyServices, navy);    // Users
-    applyAdminButtonStyle(jButton2, navy); // Services
-    applyAdminButtonStyle(jButton1, navy);    // Profile
-    applyAdminButtonStyle(jButton5, logoutBrown); // Logout
-    
-    
-    // Pananglitan, kuhaon nato ang data sa provider nga naka-session karon
-        // Sa sulod sa imong Constructor, human sa initComponents()
-try {
-    config cfg = new config();
-    // Kuhaon ang image sa user nga naka-login karon
-    String userId = String.valueOf(CONFIG.Session.getUserId()); 
-    java.sql.ResultSet rs = cfg.getData("SELECT user_image FROM tbl_users WHERE user_id = '" + userId + "'");
+    // Apply Styles
+    applyAdminButtonStyle(MyServices, navy);
+    applyAdminButtonStyle(jButton2, navy);
+    applyAdminButtonStyle(jButton1, navy);
+    applyAdminButtonStyle(jButton5, logoutBrown);
 
-    if (rs.next()) {
-        String imagePath = rs.getString("user_image");
+    // 🔥 LOAD IMAGE (FIXED)
+    try {
+        int userId = CONFIG.Session.getUserId();
 
-        if (imagePath != null && !imagePath.isEmpty()) {
-            p_navbar_pic.setVisible(true); // Ipakita kung naa
-            setCircularImage(p_navbar_pic, imagePath); // Gamit tong lingin nga method
-        } else {
-            p_navbar_pic.setVisible(false); // Itago kung blangko ang DB
+        String sql = "SELECT user_image FROM tbl_users WHERE user_id = ?";
+
+        try (java.sql.Connection conn = CONFIG.config.connectDB();
+             java.sql.PreparedStatement pst = conn.prepareStatement(sql)) {
+
+            pst.setInt(1, userId);
+
+            try (java.sql.ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    String imagePath = rs.getString("user_image");
+
+                    if (imagePath != null && !imagePath.isEmpty()) {
+                        p_navbar_pic.setVisible(true);
+                        setCircularImage(p_navbar_pic, imagePath);
+                    } else {
+                        p_navbar_pic.setVisible(false);
+                    }
+                }
+            }
         }
+
+    } catch (Exception e) {
+        p_navbar_pic.setVisible(false);
+        System.out.println("Navbar Image Error: " + e.getMessage());
     }
-    rs.close();
-} catch (Exception e) {
-    p_navbar_pic.setVisible(false);
 }
-    }
 
     
     private void applyAdminButtonStyle(JButton btn, Color baseColor) {

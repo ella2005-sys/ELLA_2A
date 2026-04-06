@@ -36,7 +36,7 @@ public class udashboard extends javax.swing.JFrame {
     applyAdminButtonStyle(jButton5, navy);   
     applyAdminButtonStyle(jButton6, logoutBrown);
     
-    styleAdminButtons(search, new java.awt.Color(60, 120, 60));// Logout
+    styleAdminButtons(searchText, new java.awt.Color(60, 120, 60));// Logout
     
     // 1. Core Functions
     new CONFIG.config().sessionGuard(this); 
@@ -115,24 +115,24 @@ public class udashboard extends javax.swing.JFrame {
    
   public void loadAvailableServices() {
     try {
-        CONFIG.config conf = new CONFIG.config();
-        
-        // GI-AYO NGA SQL: Gikuha nato ang tanan sa services PLUS ang user_name sa provider
-        // Gi-match nako sa imong screenshots: user_id ug user_name
-        // Gi-match nako sa imong actual columns: s_id, s_name, s_price, user_name, provider_id, user_id
         String sql = "SELECT s.*, u.user_name " +
-             "FROM tbl_services s " +
-             "JOIN tbl_users u ON s.provider_id = u.user_id";
-        
-        java.sql.ResultSet rs = conf.getData(sql);
-        
-        // I-clear ang table model para malikayan ang IndexOutOfBounds
-        javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) tbl_available_services.getModel();
-        model.setRowCount(0); 
-        
-        // I-display ang data gamit imong existing displayResultSet
-        conf.displayResultSet(rs, tbl_available_services);
-        
+                     "FROM tbl_services s " +
+                     "JOIN tbl_users u ON s.provider_id = u.user_id";
+
+        try (java.sql.Connection conn = CONFIG.config.connectDB();
+             java.sql.PreparedStatement pst = conn.prepareStatement(sql);
+             java.sql.ResultSet rs = pst.executeQuery()) {
+
+            // clear table first
+            javax.swing.table.DefaultTableModel model =
+                (javax.swing.table.DefaultTableModel) tbl_available_services.getModel();
+            model.setRowCount(0);
+
+            // display
+            CONFIG.config conf = new CONFIG.config();
+            conf.displayResultSet(rs, tbl_available_services);
+        }
+
     } catch (Exception e) {
         javax.swing.JOptionPane.showMessageDialog(null, "Display Error: " + e.getMessage());
     }
@@ -142,67 +142,76 @@ public class udashboard extends javax.swing.JFrame {
     
     
     public void displayCustomerStats() {
-    try {
-        CONFIG.config conf = new CONFIG.config();
-        // 1. Kuhaon ang ID sa user nga naka-login karon gikan sa Session
-        int loggedInUser = CONFIG.Session.getUserId(); 
 
-        // 2. SQL Query: Ihapon ang bookings sa 'u_id' nga match sa loggedInUser
-        // Base sa imong tbl_bookings structure
-        String sql = "SELECT COUNT(*) FROM tbl_bookings WHERE u_id = " + loggedInUser;
-        
-        java.sql.ResultSet rs = conf.getData(sql);
-        if (rs.next()) {
-            // 3. I-display ang resulta sa imong label
-            int count = rs.getInt(1);
-            lbl_booking_count.setText("" + count); 
+    int loggedInUser = CONFIG.Session.getUserId();
+
+    // 🔹 1. Booking Count
+    try {
+        String sql = "SELECT COUNT(*) FROM tbl_bookings WHERE u_id = ?";
+
+        try (java.sql.Connection conn = CONFIG.config.connectDB();
+             java.sql.PreparedStatement pst = conn.prepareStatement(sql)) {
+
+            pst.setInt(1, loggedInUser);
+
+            try (java.sql.ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    lbl_booking_count.setText(String.valueOf(rs.getInt(1)));
+                }
+            }
         }
+
     } catch (Exception e) {
         System.out.println("Stats Error: " + e.getMessage());
     }
-    
-    try {
-    CONFIG.config conf = new CONFIG.config();
-    int loggedInUser = CONFIG.Session.getUserId(); // Kuhaon ang ID sa user
 
-    // SQL: I-sum ang 'b_total' gikan sa tbl_bookings para sa maong user
-    String spentSql = "SELECT SUM(b_total) FROM tbl_bookings WHERE u_id = " + loggedInUser;
-    
-    java.sql.ResultSet rsSpent = conf.getData(spentSql);
-    if (rsSpent.next()) {
-        double total = rsSpent.getDouble(1);
-        
-        // I-format ang numero para naay Pesos sign ug duha ka decimal places
-        lbl_total_spent.setText("₱" + String.format("%.2f", total));
-    }
-    } catch (Exception e) {
-    System.out.println("Spent Stats Error: " + e.getMessage());
-    }
-    
+    // 🔹 2. Total Spent
     try {
-    CONFIG.config conf = new CONFIG.config();
-    int loggedInUser = CONFIG.Session.getUserId(); // Kuhaon ang ID sa user gikan sa session
+        String sql = "SELECT SUM(b_total) FROM tbl_bookings WHERE u_id = ?";
 
-    // SQL: Kuhaon ang 'u_status' gikan sa tbl_users para sa maong user
-    String statusSql = "SELECT u_status FROM tbl_users WHERE user_id = " + loggedInUser;
-    
-    java.sql.ResultSet rsStatus = conf.getData(statusSql);
-    if (rsStatus.next()) {
-        String status = rsStatus.getString("u_status");
-        
-        // I-display ang status (e.g., "Active", "Pending", o "Approved")
-        lbl_status.setText(status);
-        
-        // Optional: Usban ang kolor base sa status
-        if(status.equalsIgnoreCase("Active") || status.equalsIgnoreCase("Approved")){
-            lbl_status.setForeground(new java.awt.Color(0, 153, 0)); // Green kung Active
-        } else {
-            lbl_status.setForeground(java.awt.Color.RED); // Red kung naay issue
+        try (java.sql.Connection conn = CONFIG.config.connectDB();
+             java.sql.PreparedStatement pst = conn.prepareStatement(sql)) {
+
+            pst.setInt(1, loggedInUser);
+
+            try (java.sql.ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    double total = rs.getDouble(1);
+                    lbl_total_spent.setText("₱" + String.format("%.2f", total));
+                }
+            }
         }
+
+    } catch (Exception e) {
+        System.out.println("Spent Stats Error: " + e.getMessage());
     }
-} catch (Exception e) {
-    System.out.println("Status Error: " + e.getMessage());
-}
+
+    // 🔹 3. User Status
+    try {
+        String sql = "SELECT u_status FROM tbl_users WHERE user_id = ?";
+
+        try (java.sql.Connection conn = CONFIG.config.connectDB();
+             java.sql.PreparedStatement pst = conn.prepareStatement(sql)) {
+
+            pst.setInt(1, loggedInUser);
+
+            try (java.sql.ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    String status = rs.getString("u_status");
+                    lbl_status.setText(status);
+
+                    if (status.equalsIgnoreCase("Active") || status.equalsIgnoreCase("Approved")) {
+                        lbl_status.setForeground(new java.awt.Color(0, 153, 0));
+                    } else {
+                        lbl_status.setForeground(java.awt.Color.RED);
+                    }
+                }
+            }
+        }
+
+    } catch (Exception e) {
+        System.out.println("Status Error: " + e.getMessage());
+    }
 }
     
     
@@ -298,7 +307,7 @@ public class udashboard extends javax.swing.JFrame {
         jLabel12 = new javax.swing.JLabel();
         jLabel_Welcome = new javax.swing.JLabel();
         jTextField1 = new javax.swing.JTextField();
-        search = new javax.swing.JButton();
+        searchText = new javax.swing.JButton();
         jPanel7 = new javax.swing.JPanel();
         jLabel9 = new javax.swing.JLabel();
         jLabel10 = new javax.swing.JLabel();
@@ -501,13 +510,13 @@ public class udashboard extends javax.swing.JFrame {
         });
         jPanel1.add(jTextField1, new org.netbeans.lib.awtextra.AbsoluteConstraints(690, 470, 120, 30));
 
-        search.setText("Search");
-        search.addActionListener(new java.awt.event.ActionListener() {
+        searchText.setText("Search");
+        searchText.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                searchActionPerformed(evt);
+                searchTextActionPerformed(evt);
             }
         });
-        jPanel1.add(search, new org.netbeans.lib.awtextra.AbsoluteConstraints(810, 470, 110, 30));
+        jPanel1.add(searchText, new org.netbeans.lib.awtextra.AbsoluteConstraints(810, 470, 110, 30));
 
         jPanel7.setBackground(new java.awt.Color(109, 89, 122));
 
@@ -681,53 +690,57 @@ if (selectedItem != null) {
     }
     }//GEN-LAST:event_jPanel3MouseClicked
 
-    private void searchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_searchActionPerformed
-    String searchText = jTextField1.getText().trim(); // Gigamitan og .trim() para mawala ang extra spaces
+    private void searchTextActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_searchTextActionPerformed
+   try {
+    CONFIG.config conf = new CONFIG.config();
 
-try {
-    CONFIG.config conf = new CONFIG.config(); 
-    
-    // Gi-siguro nato ang sakto nga pagkahan-ay sa ( ) para dili maglibog ang SQL
-    // Ang logic: (Kini OR Kini) AND (Kini OR Kini)
     String sql = "SELECT * FROM tbl_services WHERE "
-               + "(s_name LIKE '%" + searchText + "%' OR s_category LIKE '%" + searchText + "%') "
-               + "AND (s_status = 'Available' OR s_status = 'Active')"; 
+               + "(s_name LIKE ? OR s_category LIKE ?) "
+               + "AND (s_status = 'Available' OR s_status = 'Active')";
 
-    java.sql.ResultSet rs = conf.getData(sql);
-    
-    // Siguraduhon nga ang displayResultSet mo-handle og empty results para dili mo-error
-    conf.displayResultSet(rs, tbl_available_services); 
-    
-    centerTableText(); 
-    
-} catch (Exception e) { 
+    try (java.sql.Connection conn = CONFIG.config.connectDB();
+         java.sql.PreparedStatement pst = conn.prepareStatement(sql)) {
+
+        pst.setString(1, "%" + searchText + "%");
+        pst.setString(2, "%" + searchText + "%");
+
+        try (java.sql.ResultSet rs = pst.executeQuery()) {
+            conf.displayResultSet(rs, tbl_available_services);
+        }
+    }
+
+    centerTableText();
+
+} catch (Exception e) {
     javax.swing.JOptionPane.showMessageDialog(null, "Search Error: " + e.getMessage());
 }
-    }//GEN-LAST:event_searchActionPerformed
+    }//GEN-LAST:event_searchTextActionPerformed
 
     private void jTextField1KeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextField1KeyReleased
                                             
-    String searchText = jTextField1.getText().trim(); // Importante ang .trim()
+   String searchText = jTextField1.getText().trim();
 
     try {
         CONFIG.config conf = new CONFIG.config();
-        
-        // Gigamitan nato og LIKE '%...%' para sa dynamic filtering
-        // Gi-siguro ang sakto nga spaces sa SQL string para dili mag-syntax error
-        String sql = "SELECT * FROM tbl_services WHERE (s_name LIKE '%" + searchText + "%' "
-                   + "OR s_category LIKE '%" + searchText + "%') "
+
+        String sql = "SELECT * FROM tbl_services WHERE "
+                   + "(s_name LIKE ? OR s_category LIKE ?) "
                    + "AND (s_status = 'Available' OR s_status = 'Active')";
-        
-        java.sql.ResultSet rs = conf.getData(sql);
-        
-        // I-update ang table base sa result sa search
-        conf.displayResultSet(rs, tbl_available_services);
-        
-        // I-maintain ang aesthetic alignment sa table
+
+        try (java.sql.Connection conn = CONFIG.config.connectDB();
+             java.sql.PreparedStatement pst = conn.prepareStatement(sql)) {
+
+            pst.setString(1, "%" + searchText + "%");
+            pst.setString(2, "%" + searchText + "%");
+
+            try (java.sql.ResultSet rs = pst.executeQuery()) {
+                conf.displayResultSet(rs, tbl_available_services);
+            }
+        }
+
         centerTableText();
-        
+
     } catch (Exception e) {
-        // Gigamitan og sout lang para dili samok ang pop-up samtang nag-type ang user
         System.out.println("Live Search Error: " + e.getMessage());
     }
     }//GEN-LAST:event_jTextField1KeyReleased
@@ -778,7 +791,7 @@ try {
     private javax.swing.JLabel lbl_booking_count;
     private javax.swing.JLabel lbl_status;
     private javax.swing.JLabel lbl_total_spent;
-    private javax.swing.JButton search;
+    private javax.swing.JButton searchText;
     private javax.swing.JTable tbl_available_services;
     // End of variables declaration//GEN-END:variables
 }

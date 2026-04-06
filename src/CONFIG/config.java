@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
@@ -16,16 +17,22 @@ import net.proteanit.sql.DbUtils;
 public class config {
     //Connection Method to SQLITE
 public static Connection connectDB() {
-        Connection con = null;
-        try {
-            Class.forName("org.sqlite.JDBC"); // Load the SQLite JDBC driver
-            con = DriverManager.getConnection("jdbc:sqlite:hservice.db"); // Establish connection
-            System.out.println("Connection Successful");
-        } catch (Exception e) {
-            System.out.println("Connection Failed: " + e);
-        }
-        return con;
+    Connection con = null;
+    try {
+        Class.forName("org.sqlite.JDBC");
+
+        con = DriverManager.getConnection("jdbc:sqlite:hservice.db");
+
+        // 🔥 ADD THIS
+        java.sql.Statement stmt = con.createStatement();
+        stmt.execute("PRAGMA busy_timeout = 5000"); // wait 5 seconds if locked
+
+        System.out.println("Connection Successful");
+    } catch (Exception e) {
+        System.out.println("Connection Failed: " + e);
     }
+    return con;
+}
 
     public static Connection getConnection() {
     return connectDB();
@@ -197,12 +204,13 @@ public void displayResultSet(ResultSet rs, JTable table) {
     }
 
    public boolean insertData(String sql) {
-    try {
-        java.sql.PreparedStatement pst = getConnection().prepareStatement(sql);
+    try (Connection conn = getConnection();
+         PreparedStatement pst = conn.prepareStatement(sql)) {
+
         int rowsAffected = pst.executeUpdate();
-        pst.close();
         return rowsAffected > 0;
-    } catch (java.sql.SQLException e) {
+
+    } catch (SQLException e) {
         System.out.println("Error inserting data: " + e.getMessage());
         return false;
     }
@@ -227,11 +235,16 @@ public void deleteData(int id, String table, String column) {
 }
 
     // Sa sulod sa CONFIG/config.java
-public java.sql.ResultSet getData(String sql) throws java.sql.SQLException {
-    java.sql.Connection conn = getConnection();
-    java.sql.Statement stmt = conn.createStatement();
-    java.sql.ResultSet rs = stmt.executeQuery(sql);
-    return rs;
+public void getData(String sql, JTable table) {
+    try (Connection conn = connectDB();
+         PreparedStatement pst = conn.prepareStatement(sql);
+         ResultSet rs = pst.executeQuery()) {
+
+        table.setModel(DbUtils.resultSetToTableModel(rs));
+
+    } catch (SQLException e) {
+        System.out.println("Error: " + e.getMessage());
+    }
 }
 
         public void deleteData(String sql) {
@@ -252,16 +265,29 @@ public java.sql.ResultSet getData(String sql) throws java.sql.SQLException {
 }
 
         
-        public void updateData(String sql) {
-    try {
-        java.sql.PreparedStatement pst = getConnection().prepareStatement(sql);
+public void updateData(String sql) {
+    try (Connection conn = getConnection();
+         PreparedStatement pst = conn.prepareStatement(sql)) {
+
         int rowsUpdated = pst.executeUpdate();
+
         if (rowsUpdated > 0) {
-            javax.swing.JOptionPane.showMessageDialog(null, "Successfully Updated!");
+            JOptionPane.showMessageDialog(null, "Successfully Updated!");
         }
-        pst.close();
-    } catch (java.sql.SQLException e) {
+
+    } catch (SQLException e) {
         System.out.println("Update Error: " + e.getMessage());
+    }
+}
+
+public ResultSet getData(String sql) {
+    try {
+        Connection conn = connectDB();
+        Statement stmt = conn.createStatement();
+        return stmt.executeQuery(sql);
+    } catch (Exception e) {
+        System.out.println("GetData Error: " + e.getMessage());
+        return null;
     }
 }
     

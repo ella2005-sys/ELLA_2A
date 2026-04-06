@@ -37,58 +37,73 @@ public class Userform extends javax.swing.JFrame {
     // Kani nga constructor ang mo-fetch sa data base sa ID
     public Userform(String userId, javax.swing.JFrame parent) {
     initComponents();
-    this.parentFrame = parent;
-    this.action = "Update"; 
-    setLocationRelativeTo(parent);
-    jTextField1.setEnabled(false); 
-    // I-set ang hitsura sa placeholder
-user_pic.setText("+"); 
-user_pic.setFont(new java.awt.Font("Segoe UI", 1, 48)); // Himoon natong dako ang plus
-user_pic.setForeground(new java.awt.Color(200, 200, 200)); // Light gray para klaro sa brown
-user_pic.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-user_pic.setVerticalAlignment(javax.swing.SwingConstants.CENTER);
 
-// KANI ANG PINAKA-IMPORTANTE: Ang Border para makita ang box
-user_pic.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(255, 255, 255), 2));
-    
+    this.parentFrame = parent;
+    this.action = "Update";
+    setLocationRelativeTo(parent);
+
+    jTextField1.setEnabled(false);
+
+    // UI setup
+    user_pic.setText("+");
+    user_pic.setFont(new java.awt.Font("Segoe UI", 1, 48));
+    user_pic.setForeground(new java.awt.Color(200, 200, 200));
+    user_pic.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+    user_pic.setVerticalAlignment(javax.swing.SwingConstants.CENTER);
+    user_pic.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(255, 255, 255), 2));
+
     try {
-        // Siguraduha nga sakto ang path sa imong icon file
         java.net.URL iconURL = getClass().getResource("/IMAGEES/add.png");
         if (iconURL != null) {
             javax.swing.ImageIcon initialIcon = new javax.swing.ImageIcon(iconURL);
-            java.awt.Image img = initialIcon.getImage().getScaledInstance(user_pic.getWidth(), user_pic.getHeight(), java.awt.Image.SCALE_SMOOTH);
+            java.awt.Image img = initialIcon.getImage().getScaledInstance(
+                    user_pic.getWidth(), user_pic.getHeight(), java.awt.Image.SCALE_SMOOTH);
             user_pic.setIcon(new javax.swing.ImageIcon(img));
         }
-        user_pic.setText(""); // Papasa ang text para icon ra makita
-        user_pic.setBorder(javax.swing.BorderFactory.createLineBorder(java.awt.Color.LIGHT_GRAY));
+        user_pic.setText("");
     } catch (Exception e) {
         System.out.println("Icon error: " + e.getMessage());
     }
-    
+
+    // 🔥 DATABASE PART (FIXED)
     try {
-        config cfg = new config();
-        java.sql.ResultSet rs = cfg.getData("SELECT * FROM tbl_users WHERE user_id = '" + userId + "'");
-        
-        if(rs.next()){
-            jTextField1.setText(rs.getString("user_id"));
-            // ... (ibitay ang uban nga fields diri) ...
-            jTextField8.setText(rs.getString("user_password"));
-            
-            // DIRI DAPIT ISULOD ANG IMAGE LOGIC:
-            destination = rs.getString("user_image"); // Siguroha nga naa ni sa imong DB column
-            if(destination != null && !destination.isEmpty()){
-                javax.swing.ImageIcon ii = new javax.swing.ImageIcon(destination);
-                java.awt.Image image = ii.getImage().getScaledInstance(user_pic.getWidth(), user_pic.getHeight(), java.awt.Image.SCALE_SMOOTH);
-                user_pic.setIcon(new javax.swing.ImageIcon(image));
+        String sql = "SELECT * FROM tbl_users WHERE user_id = ?";
+
+        try (java.sql.Connection conn = CONFIG.config.connectDB();
+             java.sql.PreparedStatement pst = conn.prepareStatement(sql)) {
+
+            int id;
+            try {
+                id = Integer.parseInt(userId);
+            } catch (Exception e) {
+                System.out.println("Invalid userId: " + userId);
+                return;
             }
-            
-            jLabel1.setText("UPDATE USER/PROVIDER");
-            AddUser.setText("UPDATE");
-           
-            
-            
+
+            pst.setInt(1, id);
+
+            try (java.sql.ResultSet rs = pst.executeQuery()) {
+
+                if (rs.next()) {
+                    jTextField1.setText(rs.getString("user_id"));
+                    jTextField8.setText(rs.getString("user_password"));
+
+                    destination = rs.getString("user_image");
+
+                    if (destination != null && !destination.isEmpty()) {
+                        javax.swing.ImageIcon ii = new javax.swing.ImageIcon(destination);
+                        java.awt.Image image = ii.getImage().getScaledInstance(
+                                user_pic.getWidth(), user_pic.getHeight(), java.awt.Image.SCALE_SMOOTH);
+                        user_pic.setIcon(new javax.swing.ImageIcon(image));
+                        user_pic.setText("");
+                    }
+
+                    jLabel1.setText("UPDATE USER/PROVIDER");
+                    AddUser.setText("UPDATE");
+                }
+            }
         }
-        rs.close(); 
+
     } catch (Exception e) {
         System.out.println("Error fetching user: " + e.getMessage());
     }

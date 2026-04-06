@@ -33,25 +33,41 @@ public class UpdateUser extends javax.swing.JFrame {
 
     private void loadUserData() {
     try {
-        config cfg = new config();
-        String sql = "SELECT * FROM tbl_users WHERE user_id = '" + userId + "'";
-        ResultSet rs = cfg.getData(sql); // Gamita ang getData method sa imong config
+        String sql = "SELECT * FROM tbl_users WHERE user_id = ?";
 
-        if (rs.next()) {
-            jTextField2.setText(rs.getString("user_name"));
-            jTextField3.setText(rs.getString("user_email"));
-            jTextField4.setText(rs.getString("user_address"));
-            jTextField5.setText(rs.getString("user_number"));
-            jTextField6.setText(""); 
-            jTextField7.setText(rs.getString("u_status"));
-            jTextField8.setText(rs.getString("user_role"));
-            System.out.println("Data Loaded for ID: " + userId); // Para makita sa console kung load ba
-        } else {
-            System.out.println("No user found with ID: " + userId);
+        try (java.sql.Connection conn = CONFIG.config.connectDB();
+             java.sql.PreparedStatement pst = conn.prepareStatement(sql)) {
+
+            // 🔥 SAFE: handle case if userId is not a number
+            int id;
+            try {
+                id = Integer.parseInt(userId.toString());
+            } catch (Exception e) {
+                System.out.println("Invalid userId: " + userId);
+                return;
+            }
+
+            pst.setInt(1, id);
+
+            try (java.sql.ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    jTextField2.setText(rs.getString("user_name"));
+                    jTextField3.setText(rs.getString("user_email"));
+                    jTextField4.setText(rs.getString("user_address"));
+                    jTextField5.setText(rs.getString("user_number"));
+                    jTextField6.setText("");
+                    jTextField7.setText(rs.getString("u_status"));
+                    jTextField8.setText(rs.getString("user_role"));
+
+                    System.out.println("Data Loaded for ID: " + id);
+                } else {
+                    System.out.println("No user found with ID: " + id);
+                }
+            }
         }
-        rs.close();
+
     } catch (Exception e) {
-        JOptionPane.showMessageDialog(this, "Error loading data: " + e.getMessage());
+        javax.swing.JOptionPane.showMessageDialog(this, "Error loading data: " + e.getMessage());
     }
 }
 

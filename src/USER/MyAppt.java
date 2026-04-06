@@ -26,7 +26,7 @@ public class MyAppt extends javax.swing.JFrame {
     public MyAppt() {
         initComponents();
         setupTable(); // Kini ang mo-apply sa tanang design
-        loadAppointments();
+        loadMyAppointments();
         setLocationRelativeTo(null);
         
         Color navy = new Color(35, 66, 106);
@@ -62,50 +62,44 @@ public class MyAppt extends javax.swing.JFrame {
     }
     
 
-   public void loadAppointments() {
-    int loggedInUserId = CONFIG.Session.getUserId();
-    
-    // 1. SELECT query nga naay klaro nga table source
-    String sql = "SELECT tbl_bookings.b_id, " +
-                 "tbl_services.s_name, " +
-                 "tbl_users.user_name AS provider, " +
-                 "tbl_bookings.b_date, " +
-                 "tbl_bookings.b_address, " +
-                 "tbl_bookings.b_total, " +
-                 "tbl_bookings.b_status " +
-                 "FROM tbl_bookings " +
-                 "JOIN tbl_services ON tbl_bookings.s_id = tbl_services.s_id " +
-                 "JOIN tbl_users ON tbl_bookings.p_id = tbl_users.user_id " +
-                 "WHERE tbl_bookings.u_id = ?";
+  public void loadMyAppointments() {
+    try {
+        CONFIG.config conf = new CONFIG.config();
 
-    try (Connection conn = CONFIG.config.connectDB();
-         PreparedStatement pst = conn.prepareStatement(sql)) {
+        // Get logged-in user
+        int userId = CONFIG.Session.getUserId();
 
-        pst.setInt(1, loggedInUserId);
+        // Query ONLY bookings of this user
+        String sql = "SELECT * FROM tbl_bookings WHERE u_id = " + userId;
 
-        try (ResultSet rs = pst.executeQuery()) {
-            DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
-            model.setRowCount(0); 
+        java.sql.ResultSet rs = conf.getData(sql);
 
-            while (rs.next()) {
-                model.addRow(new Object[]{
-                    rs.getInt("b_id"),
-                    rs.getString("s_name") != null ? rs.getString("s_name") : "No Service",
-                    rs.getString("provider") != null ? rs.getString("provider") : "No Provider",
-                    rs.getString("b_date") != null ? rs.getString("b_date") : "-",
-                    rs.getString("b_address") != null ? rs.getString("b_address") : "-",
-                    "₱" + (rs.getString("b_total") != null ? rs.getString("b_total") : "0"),
-                    rs.getString("b_status") != null ? rs.getString("b_status") : "Pending"
-                });
-            }
+        // Load into JTable
+        javax.swing.table.DefaultTableModel model =
+                (javax.swing.table.DefaultTableModel) tbl_appointments.getModel();
+
+        model.setRowCount(0); // clear table
+
+        while (rs.next()) {
+            Object[] row = new Object[]{
+                rs.getInt("b_id"),
+                rs.getInt("s_id"),        // service ID (for now)
+                rs.getInt("p_id"),        // provider ID
+                rs.getString("b_date"),
+                rs.getString("b_status"),
+                rs.getDouble("b_total"),
+                rs.getString("b_address")
+            };
+
+            model.addRow(row);
         }
-    } catch (SQLException e) {
-        // I-print ang full error sa console para makita nato kung naay typo sa table names
-        e.printStackTrace(); 
-        javax.swing.JOptionPane.showMessageDialog(null, "Database Error: " + e.getMessage());
-    }
 
-  
+        rs.close();
+
+    } catch (Exception e) {
+        javax.swing.JOptionPane.showMessageDialog(null,
+                "Error loading appointments: " + e.getMessage());
+    }
 }
 
 private void searchTable() {
@@ -137,7 +131,7 @@ private void searchTable() {
         }
 
         try (ResultSet rs = pst.executeQuery()) {
-            DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+            DefaultTableModel model = (DefaultTableModel) tbl_appointments.getModel();
             model.setRowCount(0);
 
             while (rs.next()) {
@@ -181,37 +175,37 @@ private void searchTable() {
             return false;
         }
     };
-    jTable1.setModel(model);
+    tbl_appointments.setModel(model);
 
     // NAVY HEADER DESIGN
     Color navy = new Color(35, 66, 106);
-    jTable1.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
-    jTable1.getTableHeader().setPreferredSize(new java.awt.Dimension(0, 35));
-    jTable1.getTableHeader().setReorderingAllowed(false);
+    tbl_appointments.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+    tbl_appointments.getTableHeader().setPreferredSize(new java.awt.Dimension(0, 35));
+    tbl_appointments.getTableHeader().setReorderingAllowed(false);
 
     DefaultTableCellRenderer headerRenderer = new DefaultTableCellRenderer();
     headerRenderer.setBackground(navy);
     headerRenderer.setForeground(Color.WHITE);
     headerRenderer.setHorizontalAlignment(javax.swing.JLabel.CENTER);
 
-    for (int i = 0; i < jTable1.getColumnCount(); i++) {
-        jTable1.getTableHeader().getColumnModel().getColumn(i).setHeaderRenderer(headerRenderer);
+    for (int i = 0; i < tbl_appointments.getColumnCount(); i++) {
+        tbl_appointments.getTableHeader().getColumnModel().getColumn(i).setHeaderRenderer(headerRenderer);
     }
 
     // COLUMN WIDTHS
-    jTable1.getColumnModel().getColumn(0).setPreferredWidth(50);  // ID
-    jTable1.getColumnModel().getColumn(1).setPreferredWidth(120); // Service
-    jTable1.getColumnModel().getColumn(2).setPreferredWidth(120); // Provider
-    jTable1.getColumnModel().getColumn(3).setPreferredWidth(100); // Date
-    jTable1.getColumnModel().getColumn(4).setPreferredWidth(120); // Address
-    jTable1.getColumnModel().getColumn(5).setPreferredWidth(80);  // Amount
-    jTable1.getColumnModel().getColumn(6).setPreferredWidth(100); // Status
+    tbl_appointments.getColumnModel().getColumn(0).setPreferredWidth(50);  // ID
+    tbl_appointments.getColumnModel().getColumn(1).setPreferredWidth(120); // Service
+    tbl_appointments.getColumnModel().getColumn(2).setPreferredWidth(120); // Provider
+    tbl_appointments.getColumnModel().getColumn(3).setPreferredWidth(100); // Date
+    tbl_appointments.getColumnModel().getColumn(4).setPreferredWidth(120); // Address
+    tbl_appointments.getColumnModel().getColumn(5).setPreferredWidth(80);  // Amount
+    tbl_appointments.getColumnModel().getColumn(6).setPreferredWidth(100); // Status
 
     // TABLE BODY LOOK
-    jTable1.setRowHeight(25);
-    jTable1.setShowGrid(true);
-    jTable1.setGridColor(new Color(230, 230, 230));
-    jTable1.setSelectionBackground(new Color(220, 230, 240));
+    tbl_appointments.setRowHeight(25);
+    tbl_appointments.setShowGrid(true);
+    tbl_appointments.setGridColor(new Color(230, 230, 230));
+    tbl_appointments.setSelectionBackground(new Color(220, 230, 240));
 
     // CENTER TEXT & STATUS COLORS
     DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer() {
@@ -242,8 +236,8 @@ private void searchTable() {
         }
     };
 
-    for (int i = 0; i < jTable1.getColumnCount(); i++) {
-        jTable1.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+    for (int i = 0; i < tbl_appointments.getColumnCount(); i++) {
+        tbl_appointments.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
     }
 }
         // Apply style sa button
@@ -291,7 +285,7 @@ private void searchTable() {
         viewdetails = new javax.swing.JButton();
         cancel = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
-        jTable1 = new javax.swing.JTable();
+        tbl_appointments = new javax.swing.JTable();
         jPanel3 = new javax.swing.JPanel();
         jLabel2 = new javax.swing.JLabel();
         jTextField1 = new javax.swing.JTextField();
@@ -338,7 +332,7 @@ private void searchTable() {
 
         jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 30, 281, 580));
 
-        jTable1.setModel(new javax.swing.table.DefaultTableModel(
+        tbl_appointments.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, null, null, null},
                 {null, null, null, null},
@@ -349,7 +343,7 @@ private void searchTable() {
                 "Title 1", "Title 2", "Title 3", "Title 4"
             }
         ));
-        jScrollPane1.setViewportView(jTable1);
+        jScrollPane1.setViewportView(tbl_appointments);
 
         jPanel1.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 260, 490, 350));
 
@@ -416,7 +410,7 @@ private void searchTable() {
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void viewdetailsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewdetailsActionPerformed
-   int row = jTable1.getSelectedRow();
+   int row = tbl_appointments.getSelectedRow();
     
     // 1. Check kung naay napili nga row
     if (row == -1) {
@@ -426,18 +420,18 @@ private void searchTable() {
 
     try {
         // Kuhaon nato ang actual count sa columns para dili mo-error
-        int colCount = jTable1.getColumnCount();
+        int colCount = tbl_appointments.getColumnCount();
 
         // 2. Pagkuha sa data (Safe indexing)
-        String id       = (colCount > 0) ? jTable1.getValueAt(row, 0).toString() : "N/A";
-        String service  = (colCount > 1) ? jTable1.getValueAt(row, 1).toString() : "N/A";
-        String provider = (colCount > 2) ? jTable1.getValueAt(row, 2).toString() : "Not Assigned";
-        String date     = (colCount > 3) ? jTable1.getValueAt(row, 3).toString() : "N/A";
-        String address  = (colCount > 4) ? jTable1.getValueAt(row, 4).toString() : "N/A";
-        String total    = (colCount > 5) ? jTable1.getValueAt(row, 5).toString() : "0.00";
+        String id       = (colCount > 0) ? tbl_appointments.getValueAt(row, 0).toString() : "N/A";
+        String service  = (colCount > 1) ? tbl_appointments.getValueAt(row, 1).toString() : "N/A";
+        String provider = (colCount > 2) ? tbl_appointments.getValueAt(row, 2).toString() : "Not Assigned";
+        String date     = (colCount > 3) ? tbl_appointments.getValueAt(row, 3).toString() : "N/A";
+        String address  = (colCount > 4) ? tbl_appointments.getValueAt(row, 4).toString() : "N/A";
+        String total    = (colCount > 5) ? tbl_appointments.getValueAt(row, 5).toString() : "0.00";
         
         // Kung ang Status naa sa column 6, kuhaon nato. Kung wala, default sa "Pending"
-        String status   = (colCount > 6) ? jTable1.getValueAt(row, 6).toString() : "PENDING";
+        String status   = (colCount > 6) ? tbl_appointments.getValueAt(row, 6).toString() : "PENDING";
 
         // 3. Color logic para sa Status Badge
         String statusColor = status.equalsIgnoreCase("Pending") ? "#f0ad4e" : "#5cb85c";
@@ -494,13 +488,13 @@ private void searchTable() {
     }//GEN-LAST:event_jComboBox1ActionPerformed
 
     private void cancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelActionPerformed
-    int row = jTable1.getSelectedRow();
+    int row = tbl_appointments.getSelectedRow();
     if (row == -1) {
         javax.swing.JOptionPane.showMessageDialog(null, "Please select a booking to cancel.");
         return;
     }
 
-    String id = jTable1.getValueAt(row, 0).toString();
+    String id = tbl_appointments.getValueAt(row, 0).toString();
 
     int confirm = javax.swing.JOptionPane.showConfirmDialog(null, 
             "Are you sure you want to cancel this booking?", 
@@ -517,7 +511,7 @@ private void searchTable() {
 
             if (result > 0) {
                 javax.swing.JOptionPane.showMessageDialog(null, "Cancelled successfully!");
-                loadAppointments(); 
+                 loadMyAppointments();
             }
         } catch (java.sql.SQLException e) {
             javax.swing.JOptionPane.showMessageDialog(null, "Error: " + e.getMessage());
@@ -570,9 +564,9 @@ private void searchTable() {
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JTable jTable1;
     private javax.swing.JTextField jTextField1;
     private javax.swing.JButton search;
+    private javax.swing.JTable tbl_appointments;
     private javax.swing.JButton viewdetails;
     // End of variables declaration//GEN-END:variables
 }
