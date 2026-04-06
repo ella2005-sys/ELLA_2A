@@ -13,8 +13,10 @@ import java.awt.Cursor;
 import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.sql.SQLException;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JOptionPane;
 import javax.swing.SwingConstants;
 
 public class MyAppt extends javax.swing.JFrame {
@@ -59,27 +61,74 @@ public class MyAppt extends javax.swing.JFrame {
     });
     }
     
-    private void searchTable() {
+
+   public void loadAppointments() {
+    int loggedInUserId = CONFIG.Session.getUserId();
+    
+    // 1. SELECT query nga naay klaro nga table source
+    String sql = "SELECT tbl_bookings.b_id, " +
+                 "tbl_services.s_name, " +
+                 "tbl_users.user_name AS provider, " +
+                 "tbl_bookings.b_date, " +
+                 "tbl_bookings.b_address, " +
+                 "tbl_bookings.b_total, " +
+                 "tbl_bookings.b_status " +
+                 "FROM tbl_bookings " +
+                 "JOIN tbl_services ON tbl_bookings.s_id = tbl_services.s_id " +
+                 "JOIN tbl_users ON tbl_bookings.p_id = tbl_users.user_id " +
+                 "WHERE tbl_bookings.u_id = ?";
+
+    try (Connection conn = CONFIG.config.connectDB();
+         PreparedStatement pst = conn.prepareStatement(sql)) {
+
+        pst.setInt(1, loggedInUserId);
+
+        try (ResultSet rs = pst.executeQuery()) {
+            DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+            model.setRowCount(0); 
+
+            while (rs.next()) {
+                model.addRow(new Object[]{
+                    rs.getInt("b_id"),
+                    rs.getString("s_name") != null ? rs.getString("s_name") : "No Service",
+                    rs.getString("provider") != null ? rs.getString("provider") : "No Provider",
+                    rs.getString("b_date") != null ? rs.getString("b_date") : "-",
+                    rs.getString("b_address") != null ? rs.getString("b_address") : "-",
+                    "₱" + (rs.getString("b_total") != null ? rs.getString("b_total") : "0"),
+                    rs.getString("b_status") != null ? rs.getString("b_status") : "Pending"
+                });
+            }
+        }
+    } catch (SQLException e) {
+        // I-print ang full error sa console para makita nato kung naay typo sa table names
+        e.printStackTrace(); 
+        javax.swing.JOptionPane.showMessageDialog(null, "Database Error: " + e.getMessage());
+    }
+
+  
+}
+
+private void searchTable() {
     String searchText = jTextField1.getText().toLowerCase();
     String statusFilter = jComboBox1.getSelectedItem().toString();
 
-    try {
-        Connection conn = cfg.getConnection();
-        int currentId = Session.getUserId();
-        
-        // Mag-JOIN ta para ma-search ang Service Name bisan naa sa laing table
-        String sql = "SELECT b.b_id, s.s_name, b.b_date, b.b_address, b.b_total, b.b_status " +
-                     "FROM tbl_bookings b " +
-                     "JOIN tbl_services s ON b.s_id = s.\" s_id\" " +
-                     "WHERE b.u_id = ? AND (LOWER(s.s_name) LIKE ? OR LOWER(b.b_address) LIKE ?)";
+    String sql = "SELECT tbl_bookings.b_id, tbl_services.s_name, " +
+                 "IFNULL(tbl_users.user_name, 'No Provider Assigned') AS provider_name, " +
+                 "tbl_bookings.b_date, tbl_bookings.b_address, tbl_bookings.b_total, tbl_bookings.b_status " +
+                 "FROM tbl_bookings " +
+                 "JOIN tbl_services ON tbl_bookings.s_id = tbl_services.s_id " +
+                 "LEFT JOIN tbl_users ON tbl_services.provider_id = tbl_users.user_id " +
+                 "WHERE tbl_bookings.u_id = ? AND " +
+                 "(LOWER(tbl_services.s_name) LIKE ? OR LOWER(tbl_bookings.b_address) LIKE ?)";
 
-        // Kung naay gipili nga status (dili "All Status"), idugang sa query
-        if (!statusFilter.equals("All Status")) {
-            sql += " AND b.b_status = ?";
-        }
+    if (!statusFilter.equals("All Status")) {
+        sql += " AND tbl_bookings.b_status = ?";
+    }
 
-        PreparedStatement pst = conn.prepareStatement(sql);
-        pst.setInt(1, currentId);
+    try (Connection conn = CONFIG.config.connectDB();
+         PreparedStatement pst = conn.prepareStatement(sql)) {
+
+        pst.setInt(1, CONFIG.Session.getUserId());
         pst.setString(2, "%" + searchText + "%");
         pst.setString(3, "%" + searchText + "%");
 
@@ -87,23 +136,24 @@ public class MyAppt extends javax.swing.JFrame {
             pst.setString(4, statusFilter);
         }
 
-        ResultSet rs = pst.executeQuery();
-        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
-        model.setRowCount(0);
+        try (ResultSet rs = pst.executeQuery()) {
+            DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+            model.setRowCount(0);
 
-        while (rs.next()) {
-            model.addRow(new Object[]{
-                rs.getString("b_id"),
-                rs.getString("s_name"),
-                rs.getString("b_date"),
-                rs.getString("b_address"),
-                "₱" + rs.getString("b_total"),
-                rs.getString("b_status")
-            });
+            while (rs.next()) {
+                model.addRow(new Object[]{
+                    rs.getInt("b_id"),
+                    rs.getString("s_name"),
+                    rs.getString("provider_name"),
+                    rs.getString("b_date"),
+                    rs.getString("b_address"),
+                    "₱" + rs.getDouble("b_total"),
+                    rs.getString("b_status")
+                });
+            }
         }
-        rs.close();
-        pst.close();
-    } catch (Exception e) {
+
+    } catch (java.sql.SQLException e) {
         System.out.println("Search Error: " + e.getMessage());
     }
 }
@@ -123,8 +173,8 @@ public class MyAppt extends javax.swing.JFrame {
 
     
     private void setupTable() {
-    // 1. Headers (Pareha sa udashboard)
-    String[] headers = {"ID", "Service", "Date", "Address", "Amount", "Status"};
+    // Updated Headers to include Provider
+    String[] headers = {"ID", "Service", "Provider", "Date", "Address", "Amount", "Status"};
     DefaultTableModel model = new DefaultTableModel(null, headers) {
         @Override
         public boolean isCellEditable(int row, int column) {
@@ -133,13 +183,12 @@ public class MyAppt extends javax.swing.JFrame {
     };
     jTable1.setModel(model);
 
-    // 2. NAVY HEADER DESIGN (Navy Background + White Font)
+    // NAVY HEADER DESIGN
     Color navy = new Color(35, 66, 106);
     jTable1.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
     jTable1.getTableHeader().setPreferredSize(new java.awt.Dimension(0, 35));
     jTable1.getTableHeader().setReorderingAllowed(false);
 
-    // Custom Header Renderer para mapugos ang Navy color sa font ug background
     DefaultTableCellRenderer headerRenderer = new DefaultTableCellRenderer();
     headerRenderer.setBackground(navy);
     headerRenderer.setForeground(Color.WHITE);
@@ -149,35 +198,34 @@ public class MyAppt extends javax.swing.JFrame {
         jTable1.getTableHeader().getColumnModel().getColumn(i).setHeaderRenderer(headerRenderer);
     }
 
-    // 3. EQUAL/BALANCED COLUMN WIDTHS (Para han-ay tan-awon)
+    // COLUMN WIDTHS
     jTable1.getColumnModel().getColumn(0).setPreferredWidth(50);  // ID
     jTable1.getColumnModel().getColumn(1).setPreferredWidth(120); // Service
-    jTable1.getColumnModel().getColumn(2).setPreferredWidth(100); // Date
-    jTable1.getColumnModel().getColumn(3).setPreferredWidth(120); // Address
-    jTable1.getColumnModel().getColumn(4).setPreferredWidth(80);  // Amount
-    jTable1.getColumnModel().getColumn(5).setPreferredWidth(100); // Status
+    jTable1.getColumnModel().getColumn(2).setPreferredWidth(120); // Provider
+    jTable1.getColumnModel().getColumn(3).setPreferredWidth(100); // Date
+    jTable1.getColumnModel().getColumn(4).setPreferredWidth(120); // Address
+    jTable1.getColumnModel().getColumn(5).setPreferredWidth(80);  // Amount
+    jTable1.getColumnModel().getColumn(6).setPreferredWidth(100); // Status
 
-    // 4. TABLE BODY LOOK
-    jTable1.setRowHeight(25); // Pareha sa udashboard row height
+    // TABLE BODY LOOK
+    jTable1.setRowHeight(25);
     jTable1.setShowGrid(true);
     jTable1.setGridColor(new Color(230, 230, 230));
     jTable1.setSelectionBackground(new Color(220, 230, 240));
 
-    // 5. CENTER TEXT SA TANAN COLUMNS & STATUS COLORS
+    // CENTER TEXT & STATUS COLORS
     DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer() {
         @Override
         public java.awt.Component getTableCellRendererComponent(javax.swing.JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             java.awt.Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
             setHorizontalAlignment(javax.swing.JLabel.CENTER);
-            
-            // Default font para sa body
             c.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-            
-            // Status Color Logic (Column 5)
-            if (column == 5 && value != null) {
+
+            // Status Color Logic (Column 6)
+            if (column == 6 && value != null) {
                 String status = value.toString();
                 if (status.equalsIgnoreCase("Pending")) {
-                    c.setForeground(new Color(255, 140, 0)); // Dark Orange
+                    c.setForeground(new Color(255, 140, 0)); // Orange
                 } else if (status.equalsIgnoreCase("Approved")) {
                     c.setForeground(new Color(0, 153, 51)); // Green
                 } else {
@@ -187,11 +235,9 @@ public class MyAppt extends javax.swing.JFrame {
                 c.setForeground(Color.BLACK);
             }
 
-            // Maintain selection color maski naay status color
             if (isSelected) {
                 c.setForeground(table.getSelectionForeground());
             }
-            
             return c;
         }
     };
@@ -203,52 +249,6 @@ public class MyAppt extends javax.swing.JFrame {
         // Apply style sa button
      
 
-    public void loadAppointments() {
-        try {
-            Connection conn = cfg.getConnection();
-            int currentId = Session.getUserId();
-            String sql = "SELECT b_id, s_id, b_date, b_address, b_total, b_status FROM tbl_bookings WHERE u_id = ?";
-            PreparedStatement pst = conn.prepareStatement(sql);
-            pst.setInt(1, currentId);
-            ResultSet rs = pst.executeQuery();
-
-            DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
-            model.setRowCount(0);
-
-            while (rs.next()) {
-                int serviceId = rs.getInt("s_id");
-                String serviceName = "Unknown Service";
-
-                try {
-                    // Note: Gamita ang \" s_id\" kung wala pa nimo na-rename ang column sa DB
-                    String serviceSql = "SELECT s_name FROM tbl_services WHERE \" s_id\" = ?";
-                    PreparedStatement pstService = conn.prepareStatement(serviceSql);
-                    pstService.setInt(1, serviceId);
-                    ResultSet rsService = pstService.executeQuery();
-                    if (rsService.next()) {
-                        serviceName = rsService.getString("s_name");
-                    }
-                    rsService.close();
-                    pstService.close();
-                } catch (Exception e) {
-                    System.out.println("Service Name Error: " + e.getMessage());
-                }
-
-                model.addRow(new Object[]{
-                    rs.getString("b_id"),
-                    serviceName,
-                    rs.getString("b_date"),
-                    rs.getString("b_address"),
-                    "₱" + rs.getString("b_total"),
-                    rs.getString("b_status")
-                });
-            }
-            rs.close();
-            pst.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
     private void applyAdminButtonStyle(JButton btn, Color baseColor) {
         btn.setBorderPainted(false);
@@ -288,8 +288,8 @@ public class MyAppt extends javax.swing.JFrame {
         jPanel2 = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
         jButton1 = new javax.swing.JButton();
-        cancel = new javax.swing.JButton();
         viewdetails = new javax.swing.JButton();
+        cancel = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
         jPanel3 = new javax.swing.JPanel();
@@ -320,14 +320,6 @@ public class MyAppt extends javax.swing.JFrame {
         });
         jPanel2.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 150, 220, 30));
 
-        cancel.setText("Cancel Booking");
-        cancel.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cancelActionPerformed(evt);
-            }
-        });
-        jPanel2.add(cancel, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 230, 220, 30));
-
         viewdetails.setText("View Details");
         viewdetails.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -335,6 +327,14 @@ public class MyAppt extends javax.swing.JFrame {
             }
         });
         jPanel2.add(viewdetails, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 310, 220, -1));
+
+        cancel.setText("Cancel Booking");
+        cancel.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cancelActionPerformed(evt);
+            }
+        });
+        jPanel2.add(cancel, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 240, 220, -1));
 
         jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 30, 281, 580));
 
@@ -415,51 +415,74 @@ public class MyAppt extends javax.swing.JFrame {
     this.dispose();
     }//GEN-LAST:event_jButton1ActionPerformed
 
-    private void cancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelActionPerformed
-       int row = jTable1.getSelectedRow();
+    private void viewdetailsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewdetailsActionPerformed
+   int row = jTable1.getSelectedRow();
     
+    // 1. Check kung naay napili nga row
     if (row == -1) {
-        javax.swing.JOptionPane.showMessageDialog(null, "Please select a booking to cancel.");
+        javax.swing.JOptionPane.showMessageDialog(null, "Please select a booking first!");
         return;
     }
 
-    // Kuhaa ang ID gikan sa first column (index 0)
-    String id = jTable1.getValueAt(row, 0).toString();
-    String service = jTable1.getValueAt(row, 1).toString();
+    try {
+        // Kuhaon nato ang actual count sa columns para dili mo-error
+        int colCount = jTable1.getColumnCount();
 
-    // Confirmation Dialog
-    int confirm = javax.swing.JOptionPane.showConfirmDialog(null, 
-            "Are you sure you want to cancel your booking for " + service + "?", 
-            "Cancel Booking", javax.swing.JOptionPane.YES_NO_OPTION);
+        // 2. Pagkuha sa data (Safe indexing)
+        String id       = (colCount > 0) ? jTable1.getValueAt(row, 0).toString() : "N/A";
+        String service  = (colCount > 1) ? jTable1.getValueAt(row, 1).toString() : "N/A";
+        String provider = (colCount > 2) ? jTable1.getValueAt(row, 2).toString() : "Not Assigned";
+        String date     = (colCount > 3) ? jTable1.getValueAt(row, 3).toString() : "N/A";
+        String address  = (colCount > 4) ? jTable1.getValueAt(row, 4).toString() : "N/A";
+        String total    = (colCount > 5) ? jTable1.getValueAt(row, 5).toString() : "0.00";
+        
+        // Kung ang Status naa sa column 6, kuhaon nato. Kung wala, default sa "Pending"
+        String status   = (colCount > 6) ? jTable1.getValueAt(row, 6).toString() : "PENDING";
 
-    if (confirm == javax.swing.JOptionPane.YES_OPTION) {
-        try {
-            // Option A: DELETE ang record (Kini ang kasagaran sa projects)
-            String sql = "DELETE FROM tbl_bookings WHERE b_id = ?";
-            
-            /* // Option B: UPDATE status to 'Cancelled' (Mas maayo kung gusto nimo naay history)
-            String sql = "UPDATE tbl_bookings SET b_status = 'Cancelled' WHERE b_id = ?";
-            */
+        // 3. Color logic para sa Status Badge
+        String statusColor = status.equalsIgnoreCase("Pending") ? "#f0ad4e" : "#5cb85c";
 
-            java.sql.Connection conn = cfg.getConnection();
-            java.sql.PreparedStatement pst = conn.prepareStatement(sql);
-            pst.setString(1, id);
+        // 4. Ang Nindot nga HTML Receipt Design
+        String message = "<html>"
+            + "<div style='width: 320px; background-color: white; padding: 20px; font-family: Segoe UI, sans-serif;'>"
+            + "  <div style='text-align: center; border-bottom: 2px dashed #1a4d80; padding-bottom: 10px; margin-bottom: 15px;'>"
+            + "    <h2 style='margin: 0; color: #1a4d80;'>LOCAL HELPER</h2>"
+            + "    <p style='margin: 0; font-size: 10px; color: #888;'>OFFICIAL SERVICE RECEIPT</p>"
+            + "  </div>"
+            + "  <table style='width: 100%; border-collapse: collapse;'>"
+            + "    <tr><td style='padding: 3px 0; color: #777;'>Booking ID:</td><td style='text-align: right;'><b>#" + id + "</b></td></tr>"
+            + "    <tr><td style='padding: 3px 0; color: #777;'>Service:</td><td style='text-align: right;'>" + service + "</td></tr>"
+            + "    <tr><td style='padding: 3px 0; color: #777;'>Provider:</td><td style='text-align: right; color: #1a4d80;'><b>" + provider + "</b></td></tr>"
+            + "    <tr><td style='padding: 3px 0; color: #777;'>Schedule:</td><td style='text-align: right;'>" + date + "</td></tr>"
+            + "  </table>"
+            + "  <div style='margin-top: 15px; padding: 12px; background-color: #f9f9f9; border-radius: 8px; border: 1px solid #eee;'>"
+            + "    <table style='width: 100%;'>"
+            + "      <tr>"
+            + "        <td><b style='font-size: 12px;'>Total Amount:</b></td>"
+            + "        <td style='text-align: right; color: #d9534f; font-size: 16px;'><b>" + total + "</b></td>"
+            + "      </tr>"
+            + "      <tr>"
+            + "        <td><small style='color: #777;'>Status:</small></td>"
+            + "        <td style='text-align: right;'><span style='background-color: " + statusColor + "; color: white; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: bold;'>" + status.toUpperCase() + "</span></td>"
+            + "      </tr>"
+            + "    </table>"
+            + "  </div>"
+            + "  <div style='text-align: center; margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px;'>"
+            + "    <p style='font-size: 9px; color: #bbb; margin: 0;'>Location: " + address + "</p>"
+            + "    <p style='font-size: 10px; color: #1a4d80; margin-top: 5px;'><b>Thank you for trusting LocalHelper!</b></p>"
+            + "  </div>"
+            + "</div></html>";
 
-            int result = pst.executeUpdate();
-            if (result > 0) {
-                javax.swing.JOptionPane.showMessageDialog(null, "Booking cancelled successfully!");
-                loadAppointments(); // I-refresh ang table para mawala ang gi-cancel
-            }
-            
-            pst.close();
-        } catch (Exception e) {
-            javax.swing.JOptionPane.showMessageDialog(null, "Error: " + e.getMessage());
-        }
+        // 5. I-display ang Message
+        javax.swing.JOptionPane.showMessageDialog(null, message, "Booking Details", javax.swing.JOptionPane.PLAIN_MESSAGE);
+
+    } catch (Exception e) {
+        // I-print ang error para mahibaloan kung unsay kulang
+        System.out.println("Display Error: " + e.getMessage());
+        javax.swing.JOptionPane.showMessageDialog(null, "Error displaying details. Please try again.");
     }
-    }//GEN-LAST:event_cancelActionPerformed
 
-    private void viewdetailsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewdetailsActionPerformed
-        // TODO add your handling code here:
+
     }//GEN-LAST:event_viewdetailsActionPerformed
 
     private void searchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_searchActionPerformed
@@ -469,6 +492,38 @@ public class MyAppt extends javax.swing.JFrame {
     private void jComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1ActionPerformed
         searchTable();
     }//GEN-LAST:event_jComboBox1ActionPerformed
+
+    private void cancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelActionPerformed
+    int row = jTable1.getSelectedRow();
+    if (row == -1) {
+        javax.swing.JOptionPane.showMessageDialog(null, "Please select a booking to cancel.");
+        return;
+    }
+
+    String id = jTable1.getValueAt(row, 0).toString();
+
+    int confirm = javax.swing.JOptionPane.showConfirmDialog(null, 
+            "Are you sure you want to cancel this booking?", 
+            "Cancel Booking", javax.swing.JOptionPane.YES_NO_OPTION);
+
+    if (confirm == javax.swing.JOptionPane.YES_OPTION) {
+        String sql = "DELETE FROM tbl_bookings WHERE b_id = ?";
+        
+        try (java.sql.Connection conn = CONFIG.config.connectDB();
+             java.sql.PreparedStatement pst = conn.prepareStatement(sql)) {
+            
+            pst.setString(1, id);
+            int result = pst.executeUpdate();
+
+            if (result > 0) {
+                javax.swing.JOptionPane.showMessageDialog(null, "Cancelled successfully!");
+                loadAppointments(); 
+            }
+        } catch (java.sql.SQLException e) {
+            javax.swing.JOptionPane.showMessageDialog(null, "Error: " + e.getMessage());
+        }
+    }
+    }//GEN-LAST:event_cancelActionPerformed
 
     /**
      * @param args the command line arguments

@@ -177,6 +177,7 @@ model.setRowCount(0);
     } catch (Exception e) {
         JOptionPane.showMessageDialog(this, "Error adding service: " + e.getMessage());
     }
+     this.dispose();
 }
    
    private void applyDashboardStyle(javax.swing.JButton btn, java.awt.Color baseColor) {
@@ -331,6 +332,7 @@ model.setRowCount(0);
     private void AddServiceActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddServiceActionPerformed
        AddService add = new AddService(CONFIG.Session.getUserId()); // pass provider ID
     add.setVisible(true);
+     this.dispose();
     }//GEN-LAST:event_AddServiceActionPerformed
 
     private void homeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_homeActionPerformed

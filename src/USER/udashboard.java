@@ -15,7 +15,12 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
 import javax.swing.SwingConstants;
-
+import javax.swing.table.DefaultTableModel;
+import CONFIG.config;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class udashboard extends javax.swing.JFrame {
 
@@ -29,7 +34,6 @@ public class udashboard extends javax.swing.JFrame {
     applyAdminButtonStyle(BookAService, navy);  // Providers
     applyAdminButtonStyle(jButton3, navy); 
     applyAdminButtonStyle(jButton5, navy);   
-    applyAdminButtonStyle(jButton4, navy);// Profile
     applyAdminButtonStyle(jButton6, logoutBrown);
     
     styleAdminButtons(search, new java.awt.Color(60, 120, 60));// Logout
@@ -69,7 +73,7 @@ public class udashboard extends javax.swing.JFrame {
     ((javax.swing.JLabel)jComboBox1.getRenderer()).setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
 
     // 5. Load Data
-    loadAvailableServices(); 
+    loadAvailableServices();
     displayCustomerStats();
     centerTableText(); 
 }
@@ -109,26 +113,33 @@ public class udashboard extends javax.swing.JFrame {
     });
 }
    
- public void loadAvailableServices() {
+  public void loadAvailableServices() {
     try {
         CONFIG.config conf = new CONFIG.config();
         
-        // Gigamitan nako og "*" para makuha tanan column nga naa sa imong DB karon
-        String sql = "SELECT * FROM tbl_services WHERE s_status = 'Available' OR s_status = 'Active'";
+        // GI-AYO NGA SQL: Gikuha nato ang tanan sa services PLUS ang user_name sa provider
+        // Gi-match nako sa imong screenshots: user_id ug user_name
+        // Gi-match nako sa imong actual columns: s_id, s_name, s_price, user_name, provider_id, user_id
+        String sql = "SELECT s.*, u.user_name " +
+             "FROM tbl_services s " +
+             "JOIN tbl_users u ON s.provider_id = u.user_id";
         
-        // 1. Gamiton nato ang getData method nimo para makuha ang ResultSet
         java.sql.ResultSet rs = conf.getData(sql);
         
-        // 2. KANI ANG SECRET: Ayaw gamita ang displayData!
-        // Gamita ang displayResultSet (manual loop) nga naa sa imong config.java
-        // Kay kini naggamit og DefaultTableModel, dili DbUtils nga sige'g error.
+        // I-clear ang table model para malikayan ang IndexOutOfBounds
+        javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) tbl_available_services.getModel();
+        model.setRowCount(0); 
+        
+        // I-display ang data gamit imong existing displayResultSet
         conf.displayResultSet(rs, tbl_available_services);
         
     } catch (Exception e) {
-        // I-show ang error para mahibal-an nato og ngano
         javax.swing.JOptionPane.showMessageDialog(null, "Display Error: " + e.getMessage());
     }
 }
+
+  
+    
     
     public void displayCustomerStats() {
     try {
@@ -264,7 +275,6 @@ public class udashboard extends javax.swing.JFrame {
         jButton1 = new javax.swing.JButton();
         BookAService = new javax.swing.JButton();
         jButton3 = new javax.swing.JButton();
-        jButton4 = new javax.swing.JButton();
         jButton5 = new javax.swing.JButton();
         jButton6 = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
@@ -311,7 +321,7 @@ public class udashboard extends javax.swing.JFrame {
                 jButton1ActionPerformed(evt);
             }
         });
-        jPanel2.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(25, 240, 260, -1));
+        jPanel2.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 240, 260, -1));
 
         BookAService.setBackground(new java.awt.Color(35, 66, 106));
         BookAService.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
@@ -322,7 +332,7 @@ public class udashboard extends javax.swing.JFrame {
                 BookAServiceActionPerformed(evt);
             }
         });
-        jPanel2.add(BookAService, new org.netbeans.lib.awtextra.AbsoluteConstraints(25, 300, 260, -1));
+        jPanel2.add(BookAService, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 300, 260, -1));
 
         jButton3.setBackground(new java.awt.Color(35, 66, 106));
         jButton3.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
@@ -333,13 +343,7 @@ public class udashboard extends javax.swing.JFrame {
                 jButton3ActionPerformed(evt);
             }
         });
-        jPanel2.add(jButton3, new org.netbeans.lib.awtextra.AbsoluteConstraints(25, 360, 260, -1));
-
-        jButton4.setBackground(new java.awt.Color(35, 66, 106));
-        jButton4.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
-        jButton4.setForeground(new java.awt.Color(255, 255, 255));
-        jButton4.setText("Service History");
-        jPanel2.add(jButton4, new org.netbeans.lib.awtextra.AbsoluteConstraints(25, 420, 260, -1));
+        jPanel2.add(jButton3, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 360, 260, -1));
 
         jButton5.setBackground(new java.awt.Color(35, 66, 106));
         jButton5.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
@@ -350,7 +354,7 @@ public class udashboard extends javax.swing.JFrame {
                 jButton5ActionPerformed(evt);
             }
         });
-        jPanel2.add(jButton5, new org.netbeans.lib.awtextra.AbsoluteConstraints(25, 480, 260, -1));
+        jPanel2.add(jButton5, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 420, 260, -1));
 
         jButton6.setBackground(new java.awt.Color(35, 66, 106));
         jButton6.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
@@ -565,29 +569,44 @@ public class udashboard extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void BookAServiceActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BookAServiceActionPerformed
-        int row = tbl_available_services.getSelectedRow();
-    
-    if(row != -1) { // Check if a row is actually selected
-        // 2. Extract data from the table (Adjust column indices as needed)
-        int id = Integer.parseInt(tbl_available_services.getValueAt(row, 0).toString());
-        String name = tbl_available_services.getValueAt(row, 1).toString();
-        double price = Double.parseDouble(tbl_available_services.getValueAt(row, 3).toString());
-        
-        // 3. Open BookingForm and pass the data
-        BookingForm bf = new BookingForm(id, name, price);
-        bf.setVisible(true);
-        bf.setLocationRelativeTo(null); // Centers the form
-        
-        // 4. Close the dashboard
-        this.dispose(); 
+    int row = tbl_available_services.getSelectedRow();
+    if (row != -1) {
+        int sid = Integer.parseInt(tbl_available_services.getValueAt(row, 0).toString());
+        String sname = tbl_available_services.getValueAt(row, 1).toString();
+        String price = tbl_available_services.getValueAt(row, 3).toString();
+        int pid = Integer.parseInt(tbl_available_services.getValueAt(row, 5).toString()); // Provider ID
+
+        // Fetch provider name from tbl_users (case-insensitive role)
+       String pname = "Unknown Provider";
+config conf = new config();
+String sql = "SELECT user_name FROM tbl_users WHERE user_id = ?";
+try (Connection conn = conf.connectDB();
+     PreparedStatement pst = conn.prepareStatement(sql)) {
+    pst.setInt(1, pid);
+    ResultSet rs = pst.executeQuery();
+    if (rs.next()) {
+        pname = rs.getString("user_name");
+    }
+} catch (SQLException e) {
+    System.out.println("Error fetching provider: " + e.getMessage());
+}
+System.out.println("Provider Name: " + pname);
+
+        // Open Book a Service form with details
+        bookaservice bas = new bookaservice();
+        bas.setBookingDetails(sname, pname, price, sid, pid);
+        bas.setVisible(true);
+        this.dispose();
     } else {
-        javax.swing.JOptionPane.showMessageDialog(this, "Please select a service from the table first!");
+        JOptionPane.showMessageDialog(null, "Please select a service to book!");
     }
     }//GEN-LAST:event_BookAServiceActionPerformed
 
     private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
-       new userprofile().setVisible(true);
-       this.dispose();// optional (close dashboard)
+      cusprofile cp = new cusprofile();
+    cp.setVisible(true);
+    cp.setLocationRelativeTo(null); // center screen
+    this.dispose(); // closes dashboard (optional)
     }//GEN-LAST:event_jButton5ActionPerformed
 
     private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
@@ -601,15 +620,30 @@ public class udashboard extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton6ActionPerformed
 
     private void jComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1ActionPerformed
-String selectedCategory = jComboBox1.getSelectedItem().toString();
+       // 1. Siguraduhon nato nga dili null ang napili
+Object selectedItem = jComboBox1.getSelectedItem();
+
+if (selectedItem != null) {
+    String selectedCategory = selectedItem.toString();
+    
     try {
         CONFIG.config conf = new CONFIG.config();
-        // Filters the table based on what you chose in the dropdown
-        String sql = "SELECT * FROM tbl_services WHERE s_category = '" + selectedCategory + "'";
+        
+        // 2. Mas maayo nga i-handle ang 'All' option kung naa man gani
+        String sql;
+        if (selectedCategory.equals("All")) { // Optional: kung gusto nimo naay 'Show All'
+            sql = "SELECT * FROM tbl_services";
+        } else {
+            // Gigamit gihapon nato ang imong format, pero ge-siguro ang quotes
+            sql = "SELECT * FROM tbl_services WHERE s_category = '" + selectedCategory + "'";
+        }
+        
         conf.displayData(sql, tbl_available_services);
+        
     } catch (Exception e) {
         System.out.println("Filter Error: " + e.getMessage());
-    }    
+    }
+}
     }//GEN-LAST:event_jComboBox1ActionPerformed
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
@@ -648,49 +682,52 @@ String selectedCategory = jComboBox1.getSelectedItem().toString();
     }//GEN-LAST:event_jPanel3MouseClicked
 
     private void searchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_searchActionPerformed
-        String searchText = jTextField1.getText(); // Kuhaon ang gi-type sa user sa box
+    String searchText = jTextField1.getText().trim(); // Gigamitan og .trim() para mawala ang extra spaces
+
+try {
+    CONFIG.config conf = new CONFIG.config(); 
     
-    try {
-        CONFIG.config conf = new CONFIG.config();
-        
-        // Gikuha nako ang 'provider_name' sa query kay 'provider_id' naman imong gamit
-        // Gi-search nato sa s_name (Service) ug s_category (Category)
-        String sql = "SELECT * FROM tbl_services WHERE (s_name LIKE '%" + searchText + "%' "
-                   + "OR s_category LIKE '%" + searchText + "%') "
-                   + "AND (s_status = 'Available' OR s_status = 'Active')";
-        
-        // Gamita ang displayResultSet (manual loop) para safe
-        java.sql.ResultSet rs = conf.getData(sql);
-        conf.displayResultSet(rs, tbl_available_services);
-        
-        // I-recenter ang text para limpyo tan-awon
-        centerTableText();
-        
-    } catch (Exception e) {
-        javax.swing.JOptionPane.showMessageDialog(null, "Search Error: " + e.getMessage());
-    }
+    // Gi-siguro nato ang sakto nga pagkahan-ay sa ( ) para dili maglibog ang SQL
+    // Ang logic: (Kini OR Kini) AND (Kini OR Kini)
+    String sql = "SELECT * FROM tbl_services WHERE "
+               + "(s_name LIKE '%" + searchText + "%' OR s_category LIKE '%" + searchText + "%') "
+               + "AND (s_status = 'Available' OR s_status = 'Active')"; 
+
+    java.sql.ResultSet rs = conf.getData(sql);
+    
+    // Siguraduhon nga ang displayResultSet mo-handle og empty results para dili mo-error
+    conf.displayResultSet(rs, tbl_available_services); 
+    
+    centerTableText(); 
+    
+} catch (Exception e) { 
+    javax.swing.JOptionPane.showMessageDialog(null, "Search Error: " + e.getMessage());
+}
     }//GEN-LAST:event_searchActionPerformed
 
     private void jTextField1KeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextField1KeyReleased
-        String searchText = jTextField1.getText(); 
-    
+                                            
+    String searchText = jTextField1.getText().trim(); // Importante ang .trim()
+
     try {
         CONFIG.config conf = new CONFIG.config();
         
-        // Gigamitan nato og LIKE '%...%' para maski 'p' ra i-type, 
-        // mugawas tanan naay letter 'p' sa Service Name o Category.
+        // Gigamitan nato og LIKE '%...%' para sa dynamic filtering
+        // Gi-siguro ang sakto nga spaces sa SQL string para dili mag-syntax error
         String sql = "SELECT * FROM tbl_services WHERE (s_name LIKE '%" + searchText + "%' "
                    + "OR s_category LIKE '%" + searchText + "%') "
                    + "AND (s_status = 'Available' OR s_status = 'Active')";
         
-        // Gamita ang displayResultSet (manual loop) para sigurado nga walay error
         java.sql.ResultSet rs = conf.getData(sql);
+        
+        // I-update ang table base sa result sa search
         conf.displayResultSet(rs, tbl_available_services);
         
-        // I-center balik ang text sa table para dili magkatibulaag
+        // I-maintain ang aesthetic alignment sa table
         centerTableText();
         
     } catch (Exception e) {
+        // Gigamitan og sout lang para dili samok ang pop-up samtang nag-type ang user
         System.out.println("Live Search Error: " + e.getMessage());
     }
     }//GEN-LAST:event_jTextField1KeyReleased
@@ -713,7 +750,6 @@ String selectedCategory = jComboBox1.getSelectedItem().toString();
     private javax.swing.JButton BookAService;
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton3;
-    private javax.swing.JButton jButton4;
     private javax.swing.JButton jButton5;
     private javax.swing.JButton jButton6;
     private javax.swing.JComboBox<String> jComboBox1;

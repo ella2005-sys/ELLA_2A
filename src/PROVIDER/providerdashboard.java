@@ -25,10 +25,7 @@ public class providerdashboard extends javax.swing.JFrame {
 
     // Apply Styles to all buttons
     applyAdminButtonStyle(MyServices, navy);    // Users
-    applyAdminButtonStyle(ratings, navy);  // Providers
-    applyAdminButtonStyle(jButton4, navy); 
-    applyAdminButtonStyle(jButton2, navy);
-    applyAdminButtonStyle(jButton6, navy);    // Services
+    applyAdminButtonStyle(jButton2, navy); // Services
     applyAdminButtonStyle(jButton1, navy);    // Profile
     applyAdminButtonStyle(jButton5, logoutBrown); // Logout
     
@@ -122,11 +119,8 @@ try {
         jPanel2 = new javax.swing.JPanel();
         MyServices = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
-        ratings = new javax.swing.JButton();
-        jButton4 = new javax.swing.JButton();
         jButton5 = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
-        jButton6 = new javax.swing.JButton();
         jButton1 = new javax.swing.JButton();
         jLabel2 = new javax.swing.JLabel();
         jPanel4 = new javax.swing.JPanel();
@@ -138,9 +132,6 @@ try {
         jPanel6 = new javax.swing.JPanel();
         jLabel7 = new javax.swing.JLabel();
         jLabel8 = new javax.swing.JLabel();
-        jPanel7 = new javax.swing.JPanel();
-        jLabel9 = new javax.swing.JLabel();
-        jLabel10 = new javax.swing.JLabel();
         jPanel8 = new javax.swing.JPanel();
         jLabel11 = new javax.swing.JLabel();
         jLabel12 = new javax.swing.JLabel();
@@ -164,30 +155,13 @@ try {
                 MyServicesActionPerformed(evt);
             }
         });
-        jPanel2.add(MyServices, new org.netbeans.lib.awtextra.AbsoluteConstraints(33, 158, 230, -1));
+        jPanel2.add(MyServices, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 190, 230, -1));
 
         jButton2.setBackground(new java.awt.Color(35, 66, 106));
         jButton2.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
         jButton2.setForeground(new java.awt.Color(255, 255, 255));
         jButton2.setText("My Profile");
-        jPanel2.add(jButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 340, 230, -1));
-
-        ratings.setBackground(new java.awt.Color(35, 66, 106));
-        ratings.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
-        ratings.setForeground(new java.awt.Color(255, 255, 255));
-        ratings.setText("Ratings & Feedback");
-        ratings.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ratingsActionPerformed(evt);
-            }
-        });
-        jPanel2.add(ratings, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 220, 230, -1));
-
-        jButton4.setBackground(new java.awt.Color(35, 66, 106));
-        jButton4.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
-        jButton4.setForeground(new java.awt.Color(255, 255, 255));
-        jButton4.setText("Availability Status");
-        jPanel2.add(jButton4, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 280, 230, -1));
+        jPanel2.add(jButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 330, 230, -1));
 
         jButton5.setBackground(new java.awt.Color(35, 66, 106));
         jButton5.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
@@ -203,12 +177,6 @@ try {
         jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/IMAGES/Blue White Modern Minimalist Interior Designer Personal Branding Logo(1)(1).jpg"))); // NOI18N
         jPanel2.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(67, 22, -1, -1));
 
-        jButton6.setBackground(new java.awt.Color(35, 66, 106));
-        jButton6.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
-        jButton6.setForeground(new java.awt.Color(255, 255, 255));
-        jButton6.setText("Wallet");
-        jPanel2.add(jButton6, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 400, 230, -1));
-
         jButton1.setBackground(new java.awt.Color(35, 66, 106));
         jButton1.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
         jButton1.setForeground(new java.awt.Color(255, 255, 255));
@@ -218,7 +186,7 @@ try {
                 jButton1ActionPerformed(evt);
             }
         });
-        jPanel2.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 450, 230, -1));
+        jPanel2.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 260, 230, -1));
 
         jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 50, 290, 600));
 
@@ -328,40 +296,6 @@ try {
 
         jPanel1.add(jPanel6, new org.netbeans.lib.awtextra.AbsoluteConstraints(730, 160, -1, -1));
 
-        jPanel7.setBackground(new java.awt.Color(109, 89, 122));
-
-        jLabel9.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
-        jLabel9.setForeground(new java.awt.Color(255, 255, 255));
-        jLabel9.setText("RATINGS/REVIEWS");
-
-        jLabel10.setIcon(new javax.swing.ImageIcon(getClass().getResource("/IMAGES/rate.png"))); // NOI18N
-
-        javax.swing.GroupLayout jPanel7Layout = new javax.swing.GroupLayout(jPanel7);
-        jPanel7.setLayout(jPanel7Layout);
-        jPanel7Layout.setHorizontalGroup(
-            jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel7Layout.createSequentialGroup()
-                .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel7Layout.createSequentialGroup()
-                        .addGap(23, 23, 23)
-                        .addComponent(jLabel9, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addGroup(jPanel7Layout.createSequentialGroup()
-                        .addGap(55, 55, 55)
-                        .addComponent(jLabel10, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
-                .addContainerGap())
-        );
-        jPanel7Layout.setVerticalGroup(
-            jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel7Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jLabel9, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel10, javax.swing.GroupLayout.DEFAULT_SIZE, 83, Short.MAX_VALUE)
-                .addGap(21, 21, 21))
-        );
-
-        jPanel1.add(jPanel7, new org.netbeans.lib.awtextra.AbsoluteConstraints(330, 340, 170, 150));
-
         jPanel8.setBackground(new java.awt.Color(230, 57, 70));
 
         jLabel11.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
@@ -391,7 +325,7 @@ try {
                 .addContainerGap(32, Short.MAX_VALUE))
         );
 
-        jPanel1.add(jPanel8, new org.netbeans.lib.awtextra.AbsoluteConstraints(530, 340, 170, 150));
+        jPanel1.add(jPanel8, new org.netbeans.lib.awtextra.AbsoluteConstraints(330, 340, 170, 150));
 
         jLabel13.setFont(new java.awt.Font("Segoe Script", 0, 18)); // NOI18N
         jLabel13.setForeground(new java.awt.Color(35, 66, 106));
@@ -447,17 +381,6 @@ try {
     this.dispose();
     }//GEN-LAST:event_jButton1ActionPerformed
 
-    private void ratingsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ratingsActionPerformed
-       // 1. Paghimo og object sa RatingsFeedback frame
-    PROVIDER.RatingsFeedback rf = new PROVIDER.RatingsFeedback();
-    
-    // 2. I-show ang frame
-    rf.setVisible(true);
-    
-    // 3. I-close ang dashboard (optional, depende kung gusto nimo magpabilin ang dashboard)
-    this.dispose();
-    }//GEN-LAST:event_ratingsActionPerformed
-
     /**
      * @param args the command line arguments
      */
@@ -497,11 +420,8 @@ try {
     private javax.swing.JButton MyServices;
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
-    private javax.swing.JButton jButton4;
     private javax.swing.JButton jButton5;
-    private javax.swing.JButton jButton6;
     private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel12;
     private javax.swing.JLabel jLabel13;
@@ -512,15 +432,12 @@ try {
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
-    private javax.swing.JLabel jLabel9;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel5;
     private javax.swing.JPanel jPanel6;
-    private javax.swing.JPanel jPanel7;
     private javax.swing.JPanel jPanel8;
     private javax.swing.JLabel p_navbar_pic;
-    private javax.swing.JButton ratings;
     // End of variables declaration//GEN-END:variables
 }
