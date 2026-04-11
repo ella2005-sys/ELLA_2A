@@ -3,11 +3,14 @@ package ADMIN;
 
 import CONFIG.config;
 import javax.swing.JOptionPane;
+import PROVIDER.myservices;
 
 
 public class AddService extends javax.swing.JFrame {
     
-    private int providerId; // default 0 for admin
+ 
+private int providerId; 
+private PROVIDER.myservices parent;// default 0 for admin
 
 
     
@@ -21,15 +24,16 @@ public class AddService extends javax.swing.JFrame {
 }
 
 // Provider constructor
-public AddService(int providerId) {
-    // Check session before anything else
+public AddService(int providerId, PROVIDER.myservices parent) {
     new CONFIG.config().sessionGuard(this);
-    
     initComponents();
     this.providerId = providerId;
+    this.parent = parent; 
     jTextField1.setEnabled(false);
     jTextField1.setText("Auto"); 
 }
+
+    
 
     
     @SuppressWarnings("unchecked")
@@ -167,40 +171,41 @@ public AddService(int providerId) {
     }//GEN-LAST:event_jComboBox1ActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-      config cfg = new config();
+    CONFIG.config cfg = new CONFIG.config();
 
-        String sName = jTextField2.getText().trim();
-        String sCat = jComboBox1.getSelectedItem().toString();
-        String sPrice = jTextField4.getText().trim();
-        String sStat = jTextField3.getText().trim();
+    String sName = jTextField2.getText().trim();
+    String sCat = jComboBox1.getSelectedItem().toString();
+    String sPrice = jTextField4.getText().trim();
+    String sStat = jTextField3.getText().trim();
 
-        if (sName.isEmpty() || sPrice.isEmpty() || sStat.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please fill in all required fields!");
-            return;
+    if (sName.isEmpty() || sPrice.isEmpty() || sStat.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Please fill in all required fields!");
+        return;
+    }
+
+    try {
+        String sql;
+        if (providerId > 0) {
+            sql = "INSERT INTO tbl_services (s_name, s_category, s_price, s_status, provider_id) VALUES (?, ?, ?, ?, ?)";
+            cfg.addRecord(sql, sName, sCat, sPrice, sStat, providerId);
+        } else {
+            sql = "INSERT INTO tbl_services (s_name, s_category, s_price, s_status) VALUES (?, ?, ?, ?)";
+            cfg.addRecord(sql, sName, sCat, sPrice, sStat);
         }
 
-        try {
-            String sql;
-            if (providerId > 0) {
-                // Provider adding service
-                sql = "INSERT INTO tbl_services (s_name, s_category, s_price, s_status, provider_id) VALUES (?, ?, ?, ?, ?)";
-                cfg.addRecord(sql, sName, sCat, sPrice, sStat, providerId);
-            } else {
-                // Admin adding service (no provider_id)
-                sql = "INSERT INTO tbl_services (s_name, s_category, s_price, s_status) VALUES (?, ?, ?, ?)";
-                cfg.addRecord(sql, sName, sCat, sPrice, sStat);
-            }
+        JOptionPane.showMessageDialog(this, "Service Added Successfully!");
 
-            JOptionPane.showMessageDialog(this, "Service Added Successfully!");
-
-            // Go back to ServiceManagement
+        // Refresh Logic
+        if (parent != null) {
+    parent.refreshTable(); 
+        } else {
             new ServiceManagement().setVisible(true);
-            this.dispose();
-
-        } catch (Exception e) {
-            System.out.println("Error adding service: " + e.getMessage());
-            JOptionPane.showMessageDialog(this, "Error adding service: " + e.getMessage());
         }
+        this.dispose();
+
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(this, "Error adding service: " + e.getMessage());
+    }
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void CancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CancelActionPerformed

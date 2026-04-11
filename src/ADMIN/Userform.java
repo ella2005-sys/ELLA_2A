@@ -37,65 +37,40 @@ public class Userform extends javax.swing.JFrame {
     // Kani nga constructor ang mo-fetch sa data base sa ID
     public Userform(String userId, javax.swing.JFrame parent) {
     initComponents();
-
     this.parentFrame = parent;
     this.action = "Update";
     setLocationRelativeTo(parent);
+    jTextField1.setEnabled(false); // ID is read-only
 
-    jTextField1.setEnabled(false);
-
-    // UI setup
-    user_pic.setText("+");
-    user_pic.setFont(new java.awt.Font("Segoe UI", 1, 48));
-    user_pic.setForeground(new java.awt.Color(200, 200, 200));
-    user_pic.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-    user_pic.setVerticalAlignment(javax.swing.SwingConstants.CENTER);
-    user_pic.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(255, 255, 255), 2));
-
-    try {
-        java.net.URL iconURL = getClass().getResource("/IMAGEES/add.png");
-        if (iconURL != null) {
-            javax.swing.ImageIcon initialIcon = new javax.swing.ImageIcon(iconURL);
-            java.awt.Image img = initialIcon.getImage().getScaledInstance(
-                    user_pic.getWidth(), user_pic.getHeight(), java.awt.Image.SCALE_SMOOTH);
-            user_pic.setIcon(new javax.swing.ImageIcon(img));
-        }
-        user_pic.setText("");
-    } catch (Exception e) {
-        System.out.println("Icon error: " + e.getMessage());
-    }
-
-    // 🔥 DATABASE PART (FIXED)
     try {
         String sql = "SELECT * FROM tbl_users WHERE user_id = ?";
-
         try (java.sql.Connection conn = CONFIG.config.connectDB();
              java.sql.PreparedStatement pst = conn.prepareStatement(sql)) {
-
-            int id;
-            try {
-                id = Integer.parseInt(userId);
-            } catch (Exception e) {
-                System.out.println("Invalid userId: " + userId);
-                return;
-            }
-
-            pst.setInt(1, id);
-
+            
+            pst.setInt(1, Integer.parseInt(userId));
             try (java.sql.ResultSet rs = pst.executeQuery()) {
-
                 if (rs.next()) {
+                    // KANI ANG MGA FIELDS NGA NAWALA KAGANINA:
                     jTextField1.setText(rs.getString("user_id"));
+                    jTextField2.setText(rs.getString("user_name"));
+                    jTextField3.setText(rs.getString("user_email"));
+                    jTextField4.setText(rs.getString("user_address"));
+                    jTextField5.setText(rs.getString("user_number"));
+                    jTextField7.setText(rs.getString("u_status"));
+                    jTextField6.setText(rs.getString("user_role"));
                     jTextField8.setText(rs.getString("user_password"));
 
+                    // I-load ang Image
                     destination = rs.getString("user_image");
-
                     if (destination != null && !destination.isEmpty()) {
-                        javax.swing.ImageIcon ii = new javax.swing.ImageIcon(destination);
-                        java.awt.Image image = ii.getImage().getScaledInstance(
-                                user_pic.getWidth(), user_pic.getHeight(), java.awt.Image.SCALE_SMOOTH);
-                        user_pic.setIcon(new javax.swing.ImageIcon(image));
-                        user_pic.setText("");
+                        java.io.File imgFile = new java.io.File(destination);
+                        if(imgFile.exists()){
+                            javax.swing.ImageIcon ii = new javax.swing.ImageIcon(destination);
+                            java.awt.Image image = ii.getImage().getScaledInstance(
+                                    user_pic.getWidth(), user_pic.getHeight(), java.awt.Image.SCALE_SMOOTH);
+                            user_pic.setIcon(new javax.swing.ImageIcon(image));
+                            user_pic.setText("");
+                        }
                     }
 
                     jLabel1.setText("UPDATE USER/PROVIDER");
@@ -103,7 +78,6 @@ public class Userform extends javax.swing.JFrame {
                 }
             }
         }
-
     } catch (Exception e) {
         System.out.println("Error fetching user: " + e.getMessage());
     }
@@ -118,7 +92,7 @@ public class Userform extends javax.swing.JFrame {
     }
 }
 
-    private Userform() {
+    Userform() {
       
     }
     
@@ -331,7 +305,7 @@ public class Userform extends javax.swing.JFrame {
     }//GEN-LAST:event_CancelActionPerformed
 
     private void AddUserActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddUserActionPerformed
-      String id = jTextField1.getText();
+    String id = jTextField1.getText();
     String name = jTextField2.getText();
     String email = jTextField3.getText();
     String address = jTextField4.getText();
@@ -345,24 +319,25 @@ public class Userform extends javax.swing.JFrame {
         return;
     }
 
-    // CHECK SA ACTION (Dili na ni mo-error kay naay default value sa taas)
     if ("Add".equals(action)) { 
-        String sql = "INSERT INTO tbl_users(user_name, user_email, user_address, user_number, user_password, u_status, user_role) VALUES(?, ?, ?, ?, ?, ?, ?)";
-        cfg.executeSQL(sql, name, email, address, number, pass, status, role);
+        String sql = "INSERT INTO tbl_users(user_name, user_email, user_address, user_number, user_password, u_status, user_role, user_image) VALUES(?, ?, ?, ?, ?, ?, ?, ?)";
+        cfg.executeSQL(sql, name, email, address, number, pass, status, role, destination);
         JOptionPane.showMessageDialog(this, "Successfully Added!");
     } 
     else if ("Update".equals(action)) {
-        String sql = "UPDATE tbl_users SET user_name=?, user_email=?, user_address=?, user_number=?, user_password=?, u_status=?, user_role=? WHERE user_id=?";
-        cfg.executeSQL(sql, name, email, address, number, pass, status, role, id);
+        String sql = "UPDATE tbl_users SET user_name=?, user_email=?, user_address=?, user_number=?, user_password=?, u_status=?, user_role=?, user_image=? WHERE user_id=?";
+        cfg.executeSQL(sql, name, email, address, number, pass, status, role, destination, id);
         JOptionPane.showMessageDialog(this, "Successfully Updated!");
     }
 
-    // Sa sulod sa Userform.java human sa save/update:
-if (parentFrame instanceof usermanagement) {
-    ((usermanagement) parentFrame).displayUsers(); // Automatic refresh sa jTable1
-
+    // --- REFRESH LOGIC ---
+    if (parentFrame instanceof usermanagement) {
+        ((usermanagement) parentFrame).displayUsers(); 
+    } else if (parentFrame instanceof Providers) {
+        ((Providers) parentFrame).displayProviders(); 
+    }
+    
     this.dispose();
-}
     }//GEN-LAST:event_AddUserActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed

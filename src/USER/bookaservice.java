@@ -275,12 +275,13 @@ private void applyAdminButtonStyle(JButton btn, Color baseColor) {
         
         if (result > 0) {
             javax.swing.JOptionPane.showMessageDialog(null, "Booking Submitted Successfully!");
-            this.dispose(); 
+          
         }
 
     } catch (SQLException e) {
         javax.swing.JOptionPane.showMessageDialog(null, "Database Error: " + e.getMessage());
     }
+    this.dispose(); 
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed

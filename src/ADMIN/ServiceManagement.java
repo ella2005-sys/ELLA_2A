@@ -26,6 +26,7 @@ public class ServiceManagement extends javax.swing.JFrame {
     // Apply Styles to Action Buttons
     styleAdminButtons(Add, navy);
     styleAdminButtons(EDIT, navy);
+    styleAdminButtons(delete, navy);
     styleAdminButtons(jButton2, navy); // Search Button
     
     // Modern Search Field Border
@@ -128,6 +129,7 @@ private void tableStyle() {
         jTextFieldSearch = new javax.swing.JTextField();
         jButton2 = new javax.swing.JButton();
         EDIT = new javax.swing.JButton();
+        delete = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -223,6 +225,17 @@ private void tableStyle() {
         });
         jPanel1.add(EDIT, new org.netbeans.lib.awtextra.AbsoluteConstraints(430, 130, 90, 40));
 
+        delete.setBackground(new java.awt.Color(35, 66, 106));
+        delete.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
+        delete.setForeground(new java.awt.Color(255, 255, 255));
+        delete.setText("Delete");
+        delete.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                deleteActionPerformed(evt);
+            }
+        });
+        jPanel1.add(delete, new org.netbeans.lib.awtextra.AbsoluteConstraints(530, 130, 90, 40));
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -301,6 +314,45 @@ private void tableStyle() {
     JOptionPane.showMessageDialog(this, "Click a Service in the table to edit its details.");
     }//GEN-LAST:event_EDITActionPerformed
 
+    private void deleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteActionPerformed
+      int rowIndex = jTable1.getSelectedRow();
+
+    if (rowIndex < 0) {
+        JOptionPane.showMessageDialog(this, "Please select a service to delete!");
+    } else {
+        // Kuhaon ang ID gikan sa Table Model
+        javax.swing.table.TableModel model = jTable1.getModel();
+        String serviceId = model.getValueAt(rowIndex, 0).toString();
+        String serviceName = model.getValueAt(rowIndex, 1).toString();
+
+        // Confirmation Message para sigurado gyud ang user
+        int confirm = JOptionPane.showConfirmDialog(null, 
+            "Are you sure you want to delete service: " + serviceName + "?", 
+            "Delete Confirmation", JOptionPane.YES_NO_OPTION);
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                // SQL query para i-delete ang service
+                // Siguroha nga 's_id' ang ngalan sa column sa imong database
+                String sql = "DELETE FROM tbl_services WHERE s_id = '" + serviceId + "'";
+                
+                // Tawgon ang updateData (bisag void ni, mo-execute gihapon ang SQL)
+                cfg.updateData(sql); 
+
+                // Pahibalo nga deleted na
+                JOptionPane.showMessageDialog(this, "Service successfully deleted!");
+                
+                // I-load balik ang table para mawala ang gi-delete
+                loadServices(); 
+                
+            } catch (Exception e) {
+                System.out.println("Delete Error: " + e.getMessage());
+                JOptionPane.showMessageDialog(this, "Error deleting service: " + e.getMessage());
+            }
+        }
+    }
+    }//GEN-LAST:event_deleteActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -342,6 +394,7 @@ private void tableStyle() {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton Add;
     private javax.swing.JButton EDIT;
+    private javax.swing.JButton delete;
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
     private javax.swing.JLabel jLabel1;

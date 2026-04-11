@@ -87,7 +87,7 @@ public class Appointments extends javax.swing.JFrame {
         String sql = "SELECT b.b_id, u.user_name, s.s_name, b.b_date, b.b_address, b.b_total, b.b_status " +
                      "FROM tbl_bookings b " +
                      "LEFT JOIN tbl_users u ON b.u_id = u.user_id " +
-                     "LEFT JOIN tbl_services s ON b.s_id = s.` s_id`"; 
+                     "LEFT JOIN tbl_services s ON b.s_id = s.s_id"; 
         
         // NOTE: Kung dili gihapon mo-work ang naay space, sulayi ni nga format sa JOIN:
         // "LEFT JOIN tbl_services s ON b.s_id = s.\" s_id\""

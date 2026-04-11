@@ -42,6 +42,7 @@ public class adminprofile extends javax.swing.JFrame {
     styleAdminButtons(changephoto, navy);
     styleAdminButtons(remove, new java.awt.Color(180, 40, 40)); // Red para sa Remove
     applyAdminButtonStyle(jButton1, navy); // Sidebar button
+    applyAdminButtonStyle(changeprofile, navy); 
     
     // Manual Action Listener for Home Redirection
     jButton1.addActionListener(new java.awt.event.ActionListener() {
@@ -281,6 +282,7 @@ public class adminprofile extends javax.swing.JFrame {
         jButton1 = new javax.swing.JButton();
         jLabel2 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
+        changeprofile = new javax.swing.JButton();
         jPanel3 = new javax.swing.JPanel();
         lblName = new javax.swing.JLabel();
         lblEmail = new javax.swing.JLabel();
@@ -345,6 +347,16 @@ public class adminprofile extends javax.swing.JFrame {
         jLabel3.setForeground(new java.awt.Color(255, 255, 255));
         jLabel3.setText("MENU");
         jPanel2.add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(116, 123, -1, -1));
+
+        changeprofile.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
+        changeprofile.setForeground(new java.awt.Color(255, 255, 255));
+        changeprofile.setText("Edit Profile");
+        changeprofile.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                changeprofileActionPerformed(evt);
+            }
+        });
+        jPanel2.add(changeprofile, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 230, 220, 30));
 
         jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 20, 280, 580));
 
@@ -445,6 +457,30 @@ public class adminprofile extends javax.swing.JFrame {
     }
     }//GEN-LAST:event_removeActionPerformed
 
+    private void changeprofileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_changeprofileActionPerformed
+   // 1. Kuhaa ang ID sa admin
+    int id = CONFIG.Session.getUserId();
+
+    // 2. Kuhaa ang current Name ug Email, unya limpyohi ang HTML tags ug "&nbsp;"
+    String cleanName = lblName.getText().replaceAll("<[^>]*>", "").replace("Full Name:", "").replace("&nbsp;", "").trim();
+    String cleanEmail = lblEmail.getText().replaceAll("<[^>]*>", "").replace("Email Address:", "").replace("&nbsp;", "").trim();
+
+    // 3. GI-FIX: Gidugangan og "this" para mo-match sa bag-ong constructor
+    // Kay 4 na kabuok parameters ang gipangayo sa EditAdminProfile krun
+    EditAdminProfile edit = new EditAdminProfile(id, cleanName, cleanEmail, this); 
+    
+    edit.setVisible(true);
+    edit.setLocationRelativeTo(null);
+
+    // 4. Listener para sa Refresh
+    edit.addWindowListener(new java.awt.event.WindowAdapter() {
+        @Override
+        public void windowClosed(java.awt.event.WindowEvent e) {
+            loadAdminProfile(); 
+        }
+    });
+    }//GEN-LAST:event_changeprofileActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -483,6 +519,7 @@ public class adminprofile extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton changephoto;
+    private javax.swing.JButton changeprofile;
     private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;

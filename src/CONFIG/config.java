@@ -1,4 +1,5 @@
 
+
 package CONFIG;
 
 import java.sql.Connection;
@@ -15,27 +16,28 @@ import net.proteanit.sql.DbUtils;
 
 
 public class config {
+    
     //Connection Method to SQLITE
 public static Connection connectDB() {
     Connection con = null;
     try {
         Class.forName("org.sqlite.JDBC");
 
-        con = DriverManager.getConnection("jdbc:sqlite:hservice.db");
+        // 1. Gamita ang tibuok path para sigurado nga usa ra ka file ang ablihan
+        // PAHINUMDOM: Gamita ang forward slash (/) imbis nga backslash (\)
+        String dbPath = "jdbc:sqlite:C:/Users/Jingkie/Videos/CANES UPDATED APR 6/ELLA_2A/hservice.db";
+        
+        con = DriverManager.getConnection(dbPath);
 
-        // 🔥 ADD THIS
+        // 🔥 Busy timeout
         java.sql.Statement stmt = con.createStatement();
-        stmt.execute("PRAGMA busy_timeout = 5000"); // wait 5 seconds if locked
+        stmt.execute("PRAGMA busy_timeout = 5000");
 
-        System.out.println("Connection Successful");
+        System.out.println("Connection Successful to: " + dbPath);
     } catch (Exception e) {
         System.out.println("Connection Failed: " + e);
     }
     return con;
-}
-
-    public static Connection getConnection() {
-    return connectDB();
 }
 
     
@@ -199,18 +201,36 @@ public void displayResultSet(ResultSet rs, JTable table) {
         }
     }
 
-    public ResultSet getDataWithParam(String sql, int userId) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public ResultSet getData(String sql) {
+    try {
+        // Ayaw i-close ang connection DIREKTA diri kay kinahanglan pa ang ResultSet
+        // Pero siguruha nga ang migamit ani nga method mo-close sa ResultSet sa iyang end
+        Connection conn = connectDB();
+        Statement stmt = conn.createStatement();
+        return stmt.executeQuery(sql);
+    } catch (SQLException e) { // Mas maayo SQLException kaysa Exception lang
+        System.out.println("GetData Error: " + e.getMessage());
+        return null;
     }
+}
 
    public boolean insertData(String sql) {
-    try (Connection conn = getConnection();
-         PreparedStatement pst = conn.prepareStatement(sql)) {
+    // Gigamit nato ang try-with-resources para automatic ma-close ang connection
+    try (java.sql.Connection conn = connectDB(); 
+         java.sql.PreparedStatement pst = conn.prepareStatement(sql)) {
 
         int rowsAffected = pst.executeUpdate();
-        return rowsAffected > 0;
+        
+        if (rowsAffected > 0) {
+            System.out.println("Data inserted successfully!");
+            return true;
+        } else {
+            System.out.println("No rows affected.");
+            return false;
+        }
 
-    } catch (SQLException e) {
+    } catch (java.sql.SQLException e) {
+        // Importante ni para mahibalo ta kung ngano nag-error (e.g. Duplicate ID)
         System.out.println("Error inserting data: " + e.getMessage());
         return false;
     }
@@ -218,19 +238,27 @@ public void displayResultSet(ResultSet rs, JTable table) {
    
    // I-paste kini sa imong CONFIG/config.java nga class
 public void deleteData(int id, String table, String column) {
-    try {
-        PreparedStatement pst = getConnection().prepareStatement("DELETE FROM " + table + " WHERE " + column + " = ?");
+    // Gigamit nato ang variable 'con' gikan sa imong connectDB() method
+    String sql = "DELETE FROM " + table + " WHERE " + column + " = ?";
+    
+    try (java.sql.Connection con = connectDB(); 
+         java.sql.PreparedStatement pst = con.prepareStatement(sql)) {
+        
+        // Pag-set sa ID nga i-delete
         pst.setInt(1, id);
+        
         int rowsDeleted = pst.executeUpdate();
         
         if (rowsDeleted > 0) {
-            JOptionPane.showMessageDialog(null, "Deleted Successfully!");
+            javax.swing.JOptionPane.showMessageDialog(null, "Deleted Successfully!");
         } else {
-            JOptionPane.showMessageDialog(null, "No record found with ID: " + id);
+            javax.swing.JOptionPane.showMessageDialog(null, "No record found with ID: " + id);
         }
-        pst.close();
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(null, "Delete Error: " + e.getMessage());
+        
+    } catch (java.sql.SQLException e) {
+        // I-print sa output para makita nato ang error details sa NetBeans
+        System.out.println("Delete Error: " + e.getMessage());
+        javax.swing.JOptionPane.showMessageDialog(null, "Delete Error: " + e.getMessage());
     }
 }
 
@@ -248,8 +276,10 @@ public void getData(String sql, JTable table) {
 }
 
         public void deleteData(String sql) {
-    try {
-        PreparedStatement pst = getConnection().prepareStatement(sql);
+    // Kinahanglan i-open ang connection sa sulod sa try block
+    try (java.sql.Connection conn = connectDB();
+         java.sql.PreparedStatement pst = conn.prepareStatement(sql)) {
+        
         int rowsDeleted = pst.executeUpdate();
         
         if (rowsDeleted > 0) {
@@ -258,38 +288,35 @@ public void getData(String sql, JTable table) {
             javax.swing.JOptionPane.showMessageDialog(null, "No record found to delete.");
         }
         
-        pst.close();
     } catch (java.sql.SQLException e) {
+        System.out.println("Delete Error: " + e.getMessage());
         javax.swing.JOptionPane.showMessageDialog(null, "Delete Error: " + e.getMessage());
     }
 }
-
         
 public void updateData(String sql) {
-    try (Connection conn = getConnection();
-         PreparedStatement pst = conn.prepareStatement(sql)) {
+    // Gigamit nato ang connectDB() para sa saktong path sa hservice.db
+    try (java.sql.Connection conn = connectDB(); 
+         java.sql.PreparedStatement pst = conn.prepareStatement(sql)) {
 
         int rowsUpdated = pst.executeUpdate();
 
         if (rowsUpdated > 0) {
-            JOptionPane.showMessageDialog(null, "Successfully Updated!");
+            javax.swing.JOptionPane.showMessageDialog(null, "Successfully Updated!");
+        } else {
+            javax.swing.JOptionPane.showMessageDialog(null, "No record found to update.");
         }
 
-    } catch (SQLException e) {
+    } catch (java.sql.SQLException e) {
+        // I-print sa output para dali ra i-debug kung naay error sa SQL syntax
         System.out.println("Update Error: " + e.getMessage());
+        javax.swing.JOptionPane.showMessageDialog(null, "Update Error: " + e.getMessage());
     }
+}
+public interface TableRefresher {
+    void onDataChange();
 }
 
-public ResultSet getData(String sql) {
-    try {
-        Connection conn = connectDB();
-        Statement stmt = conn.createStatement();
-        return stmt.executeQuery(sql);
-    } catch (Exception e) {
-        System.out.println("GetData Error: " + e.getMessage());
-        return null;
-    }
-}
     
 }
     

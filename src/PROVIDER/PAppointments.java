@@ -5,138 +5,133 @@
  */
 package PROVIDER;
 
+
+
+import static CONFIG.config.connectDB;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultCellEditor;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JOptionPane;
 import javax.swing.SwingConstants;
-import javax.swing.table.DefaultTableModel;
 
-/**
- *
- * @author Jingkie
- */
 public class PAppointments extends javax.swing.JFrame {
 
-    /**
-     * Creates new form PAppointments
-     */
     public PAppointments() {
+        // 1. KINI DAPAT UNAHA - I-initialize ang tanan components (buttons, tables, etc.)
         initComponents();
         
-        java.awt.Color navy = new java.awt.Color(35, 66, 106);
-    java.awt.Color logoutBrown = new java.awt.Color(106, 75, 35);
+        // 2. Define colors
+         java.awt.Color navy = new java.awt.Color(35, 66, 106);
+    java.awt.Color brown = new java.awt.Color(106, 75, 35);
+    java.awt.Color warningRed = new java.awt.Color(180, 40, 40);
+    java.awt.Color refreshColor = new java.awt.Color(40, 100, 40);
         
+        // 3. Apply styles (Segurado na nga dili null ang buttons kay humana ang initComponents)
         applyAdminButtonStyle(jButton1, navy); 
+        styleAdminButtons(confirm, navy);
+    styleAdminButtons(completed, navy);
+    styleAdminButtons(delete, warningRed); // Pula na ang Delete button
+    styleAdminButtons(jButton2, new java.awt.Color(60, 120, 60));
         
+        // 4. Modernize Table Design
+        tableStyle();
+        
+        // 5. Load Data
         loadAppointments();
- JComboBox<String> statusCombo = new JComboBox<>(new String[]{
+
+        // 6. Setup Table Editor (Dropdown Status)
+        JComboBox<String> statusCombo = new JComboBox<>(new String[]{
             "Pending", "Approved", "Completed", "Cancelled"
         });
-
-        // Set dropdown to Status column (index 3)
         jTable1.getColumnModel().getColumn(3).setCellEditor(new DefaultCellEditor(statusCombo));
 
-        // Auto-save when status changes
-        jTable1.getModel().addTableModelListener(e -> {
-            if (e.getType() == javax.swing.event.TableModelEvent.UPDATE) {
-                int row = e.getFirstRow();
-                int col = e.getColumn();
-
-                if (col == 3) {
-                    updateBookingStatus(row);
-                }
-            }
-        });
+        // 7. Auto-save listener
+         jTable1.getTableHeader().setDefaultRenderer(new javax.swing.table.DefaultTableCellRenderer() {
+    @Override
+    public java.awt.Component getTableCellRendererComponent(javax.swing.JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+        javax.swing.JLabel label = (javax.swing.JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        label.setBackground(new java.awt.Color(35, 66, 106)); // Navy Blue
+        label.setForeground(java.awt.Color.WHITE); // White Text
+        label.setHorizontalAlignment(javax.swing.JLabel.CENTER); // Center align labels
+        label.setBorder(javax.swing.BorderFactory.createMatteBorder(0, 0, 1, 1, java.awt.Color.WHITE)); // Subtle grid sa header
+        return label;
     }
-
-   
-    
-     // LOAD APPOINTMENTS (FILTERED BY PROVIDER)
-    public void loadAppointments() {
-        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
-        model.setRowCount(0);
-
-        model.setColumnIdentifiers(new String[]{
-            "Booking ID", "Customer", "Date", "Status", "Total", "Address"
-        });
-
-        try {
-            Connection conn = DriverManager.getConnection("jdbc:sqlite:hservice.db");
-
-            int providerId = CONFIG.Session.getUserId();
-
+});
         
-
-String sql = "SELECT b.b_id, u.user_name, b.b_date, b.b_status, b.b_total, b.b_address " +
-             "FROM tbl_bookings b " +
-             "JOIN tbl_users u ON b.u_id = u.user_id " +
-             "WHERE b.p_id = ?";
-
-PreparedStatement pst = conn.prepareStatement(sql);
-pst.setInt(1, providerId);
-
-           
-
-            ResultSet rs = pst.executeQuery();
-
-            while (rs.next()) {
-                model.addRow(new Object[]{
-                    rs.getInt("b_id"),
-                    rs.getString("u_name"),
-                    rs.getString("b_date"),
-                    rs.getString("b_status"),
-                    rs.getDouble("b_total"),
-                    rs.getString("b_address")
-                });
-            }
-
-            conn.close();
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "Database Error: " + e.getMessage());
-        }
+        class CircleIcon implements javax.swing.Icon {
+    private java.awt.Image image;
+    private int size;
+    public CircleIcon(java.awt.Image image, int size) { this.image = image; this.size = size; }
+    @Override
+    public void paintIcon(java.awt.Component c, java.awt.Graphics g, int x, int y) {
+        java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+        g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setClip(new java.awt.geom.Ellipse2D.Double(x, y, size, size));
+        g2.drawImage(image, x, y, size, size, null);
+        g2.dispose();
+    }
+    @Override public int getIconWidth() { return size; }
+    @Override public int getIconHeight() { return size; }
+}
     }
 
-    // UPDATE STATUS
-    private void updateBookingStatus(int row) {
-        try {
-            int bookingId = (int) jTable1.getValueAt(row, 0);
-            String newStatus = jTable1.getValueAt(row, 3).toString();
+    // --- DESIGN METHODS ---
 
-            int confirm = JOptionPane.showConfirmDialog(null,
-                    "Change status to " + newStatus + "?",
-                    "Confirm",
-                    JOptionPane.YES_NO_OPTION);
+    private void tableStyle() {
+    // 1. Header Styling (Kini ang mo-usab sa user_id, user_name, etc. into Blue)
+    jTable1.getTableHeader().setFont(new java.awt.Font("Segoe UI Bold", 0, 13));
+    jTable1.getTableHeader().setBackground(new java.awt.Color(35, 66, 106)); // Navy Blue
+    jTable1.getTableHeader().setForeground(java.awt.Color.WHITE); // Puti nga text
+    jTable1.getTableHeader().setOpaque(false);
+    jTable1.getTableHeader().setPreferredSize(new java.awt.Dimension(0, 40)); // Mas baga gamay nga header
 
-            if (confirm != JOptionPane.YES_OPTION) return;
+    // 2. Row Styling
+    jTable1.setRowHeight(50); // Mas hayahay nga rows
+    jTable1.getColumnModel().getColumn(0).setPreferredWidth(60);
+    jTable1.setFont(new java.awt.Font("Segoe UI", 0, 12));
+    jTable1.setGridColor(new java.awt.Color(230, 230, 230)); 
+    jTable1.setShowVerticalLines(false); // Modern look (horizontal lines ra)
 
-            Connection conn = DriverManager.getConnection("jdbc:sqlite:hservice.db");
+    // 3. Selection Color (Inig click nimo sa row)
+    jTable1.setSelectionBackground(new java.awt.Color(220, 230, 250)); // Light Blue highlight
+    jTable1.setSelectionForeground(new java.awt.Color(35, 66, 106)); // Navy Blue text
 
-            String sql = "UPDATE tbl_bookings SET b_status = ? WHERE b_id = ?";
-            PreparedStatement pst = conn.prepareStatement(sql);
-            pst.setString(1, newStatus);
-            pst.setInt(2, bookingId);
+    // 4. ScrollPane Fix
+    jScrollPane1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(240, 240, 240)));
+    jScrollPane1.getViewport().setBackground(java.awt.Color.WHITE);
+}
 
-            pst.executeUpdate();
-            conn.close();
+   private void styleAdminButtons(javax.swing.JButton btn, java.awt.Color baseColor) {
+    btn.setBorderPainted(false);
+    btn.setFocusPainted(false);
+    btn.setContentAreaFilled(false);
+    btn.setOpaque(true);
+    btn.setBackground(baseColor);
+    btn.setForeground(java.awt.Color.WHITE);
+    btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+    btn.setFont(new java.awt.Font("Segoe UI Bold", java.awt.Font.PLAIN, 13));
 
-            System.out.println("Booking #" + bookingId + " updated to: " + newStatus);
-
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "Update Failed: " + e.getMessage());
+    btn.addMouseListener(new java.awt.event.MouseAdapter() {
+        @Override
+        public void mouseEntered(java.awt.event.MouseEvent evt) {
+            btn.setBackground(baseColor.brighter()); // Mo-light inig tapat sa mouse
         }
-    }
-    
+        @Override
+        public void mouseExited(java.awt.event.MouseEvent evt) {
+            btn.setBackground(baseColor); // Mobalik sa original color
+        }
+    });
+}
+
     private void applyAdminButtonStyle(JButton btn, Color baseColor) {
+        if (btn == null) return; // Safety check para sa NullPointerException
         btn.setBorderPainted(false);
         btn.setFocusPainted(false);
         btn.setContentAreaFilled(false);
@@ -160,7 +155,54 @@ pst.setInt(1, providerId);
             }
         });
     }
+
+    // --- DATABASE METHODS ---
+
+    public void loadAppointments() {
+        javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) jTable1.getModel();
+        model.setRowCount(0);
+        model.setColumnIdentifiers(new String[]{"Booking ID", "Customer", "Date", "Status", "Total", "Address"});
+
+        String sql = "SELECT b.b_id, u.user_name, b.b_date, b.b_status, b.b_total, b.b_address " +
+                     "FROM tbl_bookings b JOIN tbl_users u ON b.u_id = u.user_id WHERE b.p_id = ?";
+
+        try (Connection conn = connectDB(); PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setInt(1, CONFIG.Session.getUserId());
+            java.sql.ResultSet rs = pst.executeQuery();
+            while (rs.next()) {
+                model.addRow(new Object[]{
+                    rs.getInt("b_id"), rs.getString("user_name"), rs.getString("b_date"),
+                    rs.getString("b_status"), rs.getDouble("b_total"), rs.getString("b_address")
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void updateStatusDirectly(int id, String status) {
+        String sql = "UPDATE tbl_bookings SET b_status = ? WHERE b_id = ?";
+        try (Connection conn = connectDB(); PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setString(1, status);
+            pst.setInt(2, id);
+            pst.executeUpdate();
+            JOptionPane.showMessageDialog(null, "Status updated to " + status);
+            loadAppointments();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, "Update Error: " + e.getMessage());
+        }
+    }
+
+    private void updateBookingStatus(int row) {
+        int bookingId = (int) jTable1.getValueAt(row, 0);
+        String newStatus = jTable1.getValueAt(row, 3).toString();
+        updateStatusDirectly(bookingId, newStatus);
+    }
     
+    
+    
+    
+    // ... i-retain ang imong initComponents() ug button action events sa ubos ...
     
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
@@ -176,6 +218,9 @@ pst.setInt(1, providerId);
         jTable1 = new javax.swing.JTable();
         jTextField1 = new javax.swing.JTextField();
         jButton2 = new javax.swing.JButton();
+        confirm = new javax.swing.JButton();
+        completed = new javax.swing.JButton();
+        delete = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -255,15 +300,43 @@ pst.setInt(1, providerId);
         jButton2.setText("Search");
         jPanel1.add(jButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(770, 200, 90, 30));
 
+        confirm.setText("Confirm");
+        confirm.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                confirmActionPerformed(evt);
+            }
+        });
+        jPanel1.add(confirm, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 200, -1, -1));
+
+        completed.setText("Completed");
+        completed.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                completedActionPerformed(evt);
+            }
+        });
+        jPanel1.add(completed, new org.netbeans.lib.awtextra.AbsoluteConstraints(440, 200, -1, -1));
+
+        delete.setText("Delete");
+        delete.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                deleteActionPerformed(evt);
+            }
+        });
+        jPanel1.add(delete, new org.netbeans.lib.awtextra.AbsoluteConstraints(530, 200, -1, -1));
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 899, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 672, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 688, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
         );
 
         pack();
@@ -284,6 +357,59 @@ pst.setInt(1, providerId);
     private void jTextField1KeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextField1KeyReleased
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextField1KeyReleased
+
+    private void deleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteActionPerformed
+       int row = jTable1.getSelectedRow();
+    if (row < 0) {
+        JOptionPane.showMessageDialog(null, "Please select an appointment to delete.");
+        return;
+    }
+
+    int bookingId = (int) jTable1.getValueAt(row, 0);
+    int response = JOptionPane.showConfirmDialog(null, "Are you sure you want to DELETE Booking #" + bookingId + "?\nThis cannot be undone.", "Warning", JOptionPane.YES_NO_OPTION);
+
+    if (response == JOptionPane.YES_OPTION) {
+        String sql = "DELETE FROM tbl_bookings WHERE b_id = ?";
+        try (Connection conn = connectDB(); PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setInt(1, bookingId);
+            pst.executeUpdate();
+            JOptionPane.showMessageDialog(null, "Booking Deleted Successfully.");
+            loadAppointments(); // I-refresh ang table
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, "Delete Error: " + e.getMessage());
+        }
+    }
+    }//GEN-LAST:event_deleteActionPerformed
+
+    private void confirmActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_confirmActionPerformed
+       int row = jTable1.getSelectedRow();
+    if (row < 0) {
+        JOptionPane.showMessageDialog(null, "Please select an appointment to confirm.");
+        return;
+    }
+
+    int bookingId = (int) jTable1.getValueAt(row, 0);
+    int response = JOptionPane.showConfirmDialog(null, "Approve Booking #" + bookingId + "?", "Confirm", JOptionPane.YES_NO_OPTION);
+
+    if (response == JOptionPane.YES_OPTION) {
+        updateStatusDirectly(bookingId, "APPROVED");
+    }
+    }//GEN-LAST:event_confirmActionPerformed
+
+    private void completedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_completedActionPerformed
+        int row = jTable1.getSelectedRow();
+    if (row < 0) {
+        JOptionPane.showMessageDialog(null, "Please select an appointment to mark as completed.");
+        return;
+    }
+
+    int bookingId = (int) jTable1.getValueAt(row, 0);
+    int response = JOptionPane.showConfirmDialog(null, "Mark Booking #" + bookingId + " as Completed?", "Confirm", JOptionPane.YES_NO_OPTION);
+
+    if (response == JOptionPane.YES_OPTION) {
+        updateStatusDirectly(bookingId, "Completed");
+    }
+    }//GEN-LAST:event_completedActionPerformed
 
     /**
      * @param args the command line arguments
@@ -321,6 +447,9 @@ pst.setInt(1, providerId);
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton completed;
+    private javax.swing.JButton confirm;
+    private javax.swing.JButton delete;
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
     private javax.swing.JLabel jLabel1;

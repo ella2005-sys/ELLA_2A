@@ -6,6 +6,7 @@
 package ADMIN;
 
 import javax.swing.JOptionPane;
+import PROVIDER.myservices;
 
 /**
  *
@@ -13,16 +14,24 @@ import javax.swing.JOptionPane;
  */
 public class EditService extends javax.swing.JFrame {
 
-    /**
-     * Creates new form EditService
-     */
+    private PROVIDER.myservices parent;
+    
     public EditService() {
         initComponents();
-        new CONFIG.config().sessionGuard(this);
-        jTextField1.setEditable(false);
+    this.parent = parent;
+    new CONFIG.config().sessionGuard(this);
+    jTextField1.setEditable(false);
         
         
     }
+    
+    public EditService(PROVIDER.myservices parent) { // <--- Kinahanglan naay (PROVIDER.myservices parent) diri
+    initComponents();
+    this.parent = parent; // Mao ni ang magkonektar sa duha ka frame
+    new CONFIG.config().sessionGuard(this);
+    jTextField1.setEditable(false);
+}
+
     
     
 
@@ -225,39 +234,26 @@ public void setServiceData(String id, String name, String cat, String price, Str
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
 try {
         CONFIG.config cfg = new CONFIG.config();
-        
-        // 1. THE ULTIMATE SQL: Use 'rowid' to bypass the 's_id' spacing nightmare
-        String sql = "UPDATE tbl_services SET s_name=?, s_category=?, s_price=?, s_status=? WHERE rowid=?";
+        // Siguroa nga s_id imong gamiton sa WHERE clause kung mao na sa DB
+        String sql = "UPDATE tbl_services SET s_name=?, s_category=?, s_price=?, s_status=? WHERE s_id=?";
 
-        // 2. Get the data from your fields
         String idStr = jTextField1.getText().trim();
         String name = jTextField2.getText().trim();
         String cat = jComboBox1.getSelectedItem().toString();
         String price = jTextField3.getText().trim();
         String stat = jTextField4.getText().trim();
 
-        // 3. Convert ID to an actual Integer
-        // This ensures the database matches '3' (number) instead of '"3"' (text)
-        int idValue = Integer.parseInt(idStr);
-
-        // 4. Execute the update
-        cfg.updateRecord(
-            sql,
-            name,
-            cat,
-            price,
-            stat,
-            idValue
-        );
+        // Update process
+        cfg.updateRecord(sql, name, cat, price, stat, idStr);
 
         JOptionPane.showMessageDialog(this, "Service updated successfully!");
         
-        // 5. Refresh Management Screen
-        new ServiceManagement().setVisible(true);
+        // KINI ANG MU-REFRESH:
+        if (parent != null) {
+            parent.refreshTable(); 
+        }
         this.dispose(); 
 
-    } catch (NumberFormatException e) {
-        JOptionPane.showMessageDialog(this, "ID must be a number!");
     } catch (Exception e) {
         JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
     }

@@ -21,6 +21,7 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import CONFIG.config;
+import static CONFIG.config.connectDB;
 
 /**
  *
@@ -91,7 +92,7 @@ public admindashboard() {
 
         // 2. Load Real-Time Data from SQLite
         refreshStats();
-        updateRecentTable();
+     
         
         // 3. User & Session Initialization
         jLabel_Welcome.setText("Welcome, Admin: " + CONFIG.Session.getName());
@@ -110,10 +111,7 @@ public admindashboard() {
     applyAdminButtonStyle(jButton6, logoutBrown); // Logout
 
     // 5. MODERN TABLE STYLING (The "Un-plain" fix)
-    recentActivityTable.setRowHeight(45); 
-    recentActivityTable.setShowGrid(false);
-    recentActivityTable.setIntercellSpacing(new java.awt.Dimension(0, 0));
-    recentActivityTable.setBackground(java.awt.Color.WHITE);
+    
     
     
 
@@ -152,18 +150,7 @@ public admindashboard() {
 
     
     // Style the ScrollPane to remove the old-school border
-    jScrollPane1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(240, 240, 240)));
-    jScrollPane1.getViewport().setBackground(java.awt.Color.WHITE);
-
-    // Modern Header
-    recentActivityTable.getTableHeader().setBackground(java.awt.Color.WHITE);
-    recentActivityTable.getTableHeader().setForeground(new java.awt.Color(120, 130, 150));
-    recentActivityTable.getTableHeader().setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
-    recentActivityTable.getTableHeader().setPreferredSize(new java.awt.Dimension(0, 40));
-    recentActivityTable.getTableHeader().setBorder(javax.swing.BorderFactory.createMatteBorder(0, 0, 1, 0, new java.awt.Color(245, 245, 245)));
-
-    // Apply the modern Status Renderer (Pill style) to Column index 2
-    recentActivityTable.getColumnModel().getColumn(2).setCellRenderer(new ModernStatusRenderer());
+    
 
     // Add padding to Name and Role columns (index 0 and 1)
     javax.swing.table.DefaultTableCellRenderer paddingRenderer = new javax.swing.table.DefaultTableCellRenderer() {
@@ -175,20 +162,7 @@ public admindashboard() {
             return l;
         }
     };
-    recentActivityTable.getColumnModel().getColumn(0).setCellRenderer(paddingRenderer);
-    recentActivityTable.getColumnModel().getColumn(1).setCellRenderer(paddingRenderer);
-
-    // Hover effect for rows
-    recentActivityTable.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
-        @Override
-        public void mouseMoved(java.awt.event.MouseEvent e) {
-            int row = recentActivityTable.rowAtPoint(e.getPoint());
-            if (row > -1) {
-                recentActivityTable.setRowSelectionInterval(row, row);
-                recentActivityTable.setSelectionBackground(new java.awt.Color(248, 250, 255));
-            }
-        }
-    });
+   
 }
 
 
@@ -350,28 +324,7 @@ class ModernStatusRenderer extends javax.swing.table.DefaultTableCellRenderer {
    
 
    
-   private void updateRecentTable() {
-        String url = "jdbc:sqlite:hservice.db";
-        DefaultTableModel model = (DefaultTableModel) recentActivityTable.getModel();
-        model.setRowCount(0);
-
-        String sql = "SELECT user_name, user_role, u_status FROM tbl_users ORDER BY user_id DESC LIMIT 5";
-
-        try (Connection conn = DriverManager.getConnection(url);
-             Statement st = conn.createStatement();
-             ResultSet rs = st.executeQuery(sql)) {
-
-            while (rs.next()) {
-                model.addRow(new Object[]{
-                    rs.getString("user_name"),
-                    rs.getString("user_role"),
-                    rs.getString("u_status")  
-                });
-            }
-        } catch (SQLException e) {
-            System.out.println("Table Error: " + e.getMessage());
-        }
-    }
+   
    
    public class StatusCellRenderer extends javax.swing.table.DefaultTableCellRenderer {
     @Override
@@ -441,27 +394,29 @@ class ModernStatusRenderer extends javax.swing.table.DefaultTableCellRenderer {
     }
 }
    
-    public void updateDashboardRevenue() {
-    try {
-        java.sql.Connection conn = cfg.getConnection();
-        String sql = "SELECT SUM(b_total) AS total FROM tbl_bookings";
-        java.sql.PreparedStatement pst = conn.prepareStatement(sql);
-        java.sql.ResultSet rs = pst.executeQuery();
+   public void updateDashboardRevenue() {
+    // I-filter nato para APPROVED ug COMPLETED ra ang i-add
+    // Kani nga SQL ang gamita
+String sql = "SELECT SUM(b_total) AS total FROM tbl_bookings WHERE b_status = 'COMPLETED'";
+    
+    try (java.sql.Connection conn = connectDB(); 
+         java.sql.PreparedStatement pst = conn.prepareStatement(sql);
+         java.sql.ResultSet rs = pst.executeQuery()) {
 
         if (rs.next()) {
             double total = rs.getDouble("total");
             
-            // Kani nga line ang mo-link sa imong Design Label
-            // Siguroha nga walay space sa 'rev_label'
+            // I-set ang text sa imong label
             this.rev_label.setText("₱" + String.format("%,.2f", total));
+this.rev_label.revalidate(); // I-refresh ang layout
+this.rev_label.repaint();    // I-redraw ang label sa screen
             
-            // I-print nato para ma-confirm sa Output
-            System.out.println("Displaying to UI: ₱" + total);
+            System.out.println("Revenue Updated (Filtered): ₱" + total);
         }
-        
-        rs.close(); pst.close(); conn.close();
-    } catch (Exception e) {
-        System.out.println("UI Update Error: " + e.getMessage());
+
+    } catch (java.sql.SQLException e) {
+        System.out.println("Revenue Update Error: " + e.getMessage());
+        this.rev_label.setText("₱0.00");
     }
 }
     /**
@@ -494,8 +449,6 @@ class ModernStatusRenderer extends javax.swing.table.DefaultTableCellRenderer {
         jPane16 = new javax.swing.JLabel();
         jLabel9 = new javax.swing.JLabel();
         jLabel5 = new javax.swing.JLabel();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        recentActivityTable = new javax.swing.JTable();
         jLabel1 = new javax.swing.JLabel();
         jLabel_Welcome = new javax.swing.JLabel();
         jPanel4 = new javax.swing.JPanel();
@@ -646,18 +599,6 @@ class ModernStatusRenderer extends javax.swing.table.DefaultTableCellRenderer {
         jPanel1.add(appointmentCountLabel, new org.netbeans.lib.awtextra.AbsoluteConstraints(690, 140, -1, 140));
         jPanel1.add(jLabel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(850, 40, 30, -1));
 
-        recentActivityTable.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-
-            },
-            new String [] {
-                "User Name", "Role", "Status"
-            }
-        ));
-        jScrollPane1.setViewportView(recentActivityTable);
-
-        jPanel1.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(320, 490, 540, 130));
-
         jLabel1.setFont(new java.awt.Font("Segoe UI Black", 0, 36)); // NOI18N
         jLabel1.setForeground(new java.awt.Color(35, 36, 106));
         jLabel1.setText("ADMIN DASHBOARD");
@@ -767,7 +708,7 @@ class ModernStatusRenderer extends javax.swing.table.DefaultTableCellRenderer {
 
         profile_pic.setMaximumSize(new java.awt.Dimension(50, 50));
         profile_pic.setPreferredSize(new java.awt.Dimension(65, 65));
-        jPanel1.add(profile_pic, new org.netbeans.lib.awtextra.AbsoluteConstraints(800, 30, 80, -1));
+        jPanel1.add(profile_pic, new org.netbeans.lib.awtextra.AbsoluteConstraints(760, 30, 80, -1));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -911,12 +852,10 @@ class ModernStatusRenderer extends javax.swing.table.DefaultTableCellRenderer {
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel5;
-    private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JLabel p;
     private javax.swing.JLabel profile_pic;
     private javax.swing.JPanel providerCountLabel;
     private javax.swing.JButton providers;
-    private javax.swing.JTable recentActivityTable;
     private javax.swing.JButton reports;
     private javax.swing.JLabel rev_label;
     private javax.swing.JPanel revenuePanel;

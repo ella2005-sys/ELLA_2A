@@ -424,26 +424,25 @@ private void deleteProvider() {
     }//GEN-LAST:event_deleteActionPerformed
 
     private void updateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_updateActionPerformed
-    int row = jTable1.getSelectedRow();
+  int row = jTable1.getSelectedRow();
+    
     if (row == -1) {
         JOptionPane.showMessageDialog(this, "Please select a provider from the table.");
     } else {
-        // COLUMN 1 ang ID (dili 0 kay 0 ang Icon)
+        // COLUMN 1 ang ID (kay Column 0 ang Icon)
         String userId = jTable1.getValueAt(row, 1).toString(); 
         
-        // I-pass ang ID ug 'this' lang (ayaw na i-cast sa usermanagement)
-        // Siguraduha nga ang imong Userform constructor modawat og (String, JFrame)
+        // I-pass ang ID (userId) ug ang current frame (this)
+        // Kani nga constructor ang mo-load sa data sa Userform
         Userform uf = new Userform(userId, this); 
         uf.setVisible(true);
     }
-
-
     }//GEN-LAST:event_updateActionPerformed
 
     private void AddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddActionPerformed
-        Userform uf = new Userform(this); // 'this' refers to Providers frame
-        uf.action = "Add"; 
-        uf.setVisible(true);
+       Userform uf = new Userform(this); // I-pasa ang 'this' (Providers frame)
+    uf.action = "Add"; 
+    uf.setVisible(true);
     }//GEN-LAST:event_AddActionPerformed
 
     /**

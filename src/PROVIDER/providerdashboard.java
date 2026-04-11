@@ -18,6 +18,9 @@ public class providerdashboard extends javax.swing.JFrame {
      */
     public providerdashboard() {
     initComponents();
+    displayPendingCount();
+    displayActiveCount();
+    displayTotalEarnings();
 
     // Color Palette
     java.awt.Color navy = new java.awt.Color(35, 66, 106);
@@ -28,6 +31,40 @@ public class providerdashboard extends javax.swing.JFrame {
     applyAdminButtonStyle(jButton2, navy);
     applyAdminButtonStyle(jButton1, navy);
     applyAdminButtonStyle(jButton5, logoutBrown);
+    
+    styleDashboardCard(jPanel4, new java.awt.Color(255, 111, 94)); 
+    
+    // Pwede sab nimo i-apply sa uban:
+    styleDashboardCard(jPanel5, new java.awt.Color(78, 205, 196)); // Active Bookings
+    styleDashboardCard(jPanel6, new java.awt.Color(255, 201, 113)); // Total Earnings
+    
+    // 1. Hover Effect para sa Logout (jPanel8)
+jPanel8.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+jPanel8.addMouseListener(new java.awt.event.MouseAdapter() {
+    @Override
+    public void mouseEntered(java.awt.event.MouseEvent evt) {
+        jPanel8.setBackground(new java.awt.Color(255, 70, 70)); // Mo-light ang pula
+    }
+    @Override
+    public void mouseExited(java.awt.event.MouseEvent evt) {
+        jPanel8.setBackground(new java.awt.Color(230, 57, 70)); // Balik sa original
+    }
+    @Override
+    public void mouseClicked(java.awt.event.MouseEvent evt) {
+        // 2. Logout Validation
+        int confirm = javax.swing.JOptionPane.showConfirmDialog(null, 
+            "Are you sure you want to logout?", "Logout Confirmation", 
+            javax.swing.JOptionPane.YES_NO_OPTION);
+            
+        if (confirm == javax.swing.JOptionPane.YES_OPTION) {
+            new MAIN.login().setVisible(true);
+            // I-close ang Dashboard
+            javax.swing.SwingUtilities.getWindowAncestor(jPanel8).dispose();
+        }
+    }
+});
+    
+    
 
     // 🔥 LOAD IMAGE (FIXED)
     try {
@@ -53,11 +90,43 @@ public class providerdashboard extends javax.swing.JFrame {
                 }
             }
         }
+        
+        
 
     } catch (Exception e) {
         p_navbar_pic.setVisible(false);
         System.out.println("Navbar Image Error: " + e.getMessage());
     }
+    
+    
+}
+    
+    private void styleDashboardCard(javax.swing.JPanel panel, java.awt.Color originalColor) {
+    panel.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+    
+    panel.addMouseListener(new java.awt.event.MouseAdapter() {
+        @Override
+        public void mouseEntered(java.awt.event.MouseEvent evt) {
+            // Mo-light gamay ang color inig tapat sa mouse
+            panel.setBackground(originalColor.brighter());
+        }
+
+        @Override
+        public void mouseExited(java.awt.event.MouseEvent evt) {
+            // Mobalik sa original color inig liylo sa mouse
+            panel.setBackground(originalColor);
+        }
+
+        @Override
+        public void mouseClicked(java.awt.event.MouseEvent evt) {
+            // Moadto sa PAppointments.java inig click
+            PAppointments app = new PAppointments();
+            app.setVisible(true);
+            
+            // Kuhaa ang Window nga tag-iya ani nga panel para ma-dispose
+            javax.swing.SwingUtilities.getWindowAncestor(panel).dispose();
+        }
+    });
 }
 
     
@@ -112,6 +181,65 @@ public class providerdashboard extends javax.swing.JFrame {
     
     
     
+    public void displayPendingCount() {
+    String sql = "SELECT COUNT(*) FROM tbl_bookings WHERE b_status = 'Pending' AND p_id = '" + CONFIG.Session.getUserId() + "'";
+    
+    // Mao ni ang importante: Ang ResultSet 'rs' ug ang 'stmt' i-close dapat
+    try (java.sql.ResultSet rs = new config().getData(sql)) {
+        if (rs != null && rs.next()) {
+            int total = rs.getInt(1);
+            pending_count.setText("" + total);
+            
+            // KINI ANG SECRET: I-close ang connection gikan sa ResultSet
+            rs.getStatement().getConnection().close();
+        }
+    } catch (java.sql.SQLException e) {
+        System.out.println("Pending Count Error: " + e.getMessage());
+    }
+}
+    
+    public void displayActiveCount() {
+    String sql = "SELECT COUNT(*) FROM tbl_bookings WHERE b_status = 'APPROVED' AND p_id = '" + CONFIG.Session.getUserId() + "'";
+    
+    // Using try-with-resources para i-close ang connection (anti-database lock)
+    try (java.sql.ResultSet rs = new config().getData(sql)) {
+        if (rs != null && rs.next()) {
+            int total = rs.getInt(1);
+            active_count.setText("" + total);
+            
+            // Importante: I-close ang connection gikan sa ResultSet para dili ma-lock ang DB
+            rs.getStatement().getConnection().close();
+        }
+    } catch (java.sql.SQLException e) {
+        System.out.println("Active Count Error: " + e.getMessage());
+    }
+}
+    
+   public void displayTotalEarnings() {
+    // Usba ang 'Completed' base sa unsay spelling sa imong database
+    String sql = "SELECT SUM(b_total) FROM tbl_bookings WHERE b_status = 'Completed' AND p_id = '" + CONFIG.Session.getUserId() + "'";
+    
+    try (java.sql.Connection conn = CONFIG.config.connectDB();
+         java.sql.PreparedStatement pst = conn.prepareStatement(sql);
+         java.sql.ResultSet rs = pst.executeQuery()) {
+        
+        if (rs.next()) {
+            double total = rs.getDouble(1);
+            // I-format para naay 'P' ug duha ka decimal places
+            earnings_count.setText("P " + String.format("%.2f", total));
+        } else {
+            earnings_count.setText("P 0.00");
+        }
+    } catch (java.sql.SQLException e) {
+        System.out.println("Earnings Error: " + e.getMessage());
+        earnings_count.setText("P 0.00");
+    }
+}
+   
+   
+    
+    
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -131,13 +259,13 @@ public class providerdashboard extends javax.swing.JFrame {
         jLabel2 = new javax.swing.JLabel();
         jPanel4 = new javax.swing.JPanel();
         jLabel3 = new javax.swing.JLabel();
-        jLabel4 = new javax.swing.JLabel();
+        pending_count = new javax.swing.JLabel();
         jPanel5 = new javax.swing.JPanel();
         jLabel5 = new javax.swing.JLabel();
-        jLabel6 = new javax.swing.JLabel();
+        active_count = new javax.swing.JLabel();
         jPanel6 = new javax.swing.JPanel();
         jLabel7 = new javax.swing.JLabel();
-        jLabel8 = new javax.swing.JLabel();
+        earnings_count = new javax.swing.JLabel();
         jPanel8 = new javax.swing.JPanel();
         jLabel11 = new javax.swing.JLabel();
         jLabel12 = new javax.swing.JLabel();
@@ -167,6 +295,11 @@ public class providerdashboard extends javax.swing.JFrame {
         jButton2.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
         jButton2.setForeground(new java.awt.Color(255, 255, 255));
         jButton2.setText("My Profile");
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton2ActionPerformed(evt);
+            }
+        });
         jPanel2.add(jButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 330, 230, -1));
 
         jButton5.setBackground(new java.awt.Color(35, 66, 106));
@@ -207,7 +340,8 @@ public class providerdashboard extends javax.swing.JFrame {
         jLabel3.setForeground(new java.awt.Color(255, 255, 255));
         jLabel3.setText("PENDING REQUESTS");
 
-        jLabel4.setIcon(new javax.swing.ImageIcon(getClass().getResource("/IMAGES/wall-clock (1).png"))); // NOI18N
+        pending_count.setFont(new java.awt.Font("Segoe UI", 1, 33)); // NOI18N
+        pending_count.setIcon(new javax.swing.ImageIcon(getClass().getResource("/IMAGES/wall-clock (1).png"))); // NOI18N
 
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
@@ -219,7 +353,7 @@ public class providerdashboard extends javax.swing.JFrame {
                 .addContainerGap(17, Short.MAX_VALUE))
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addGap(40, 40, 40)
-                .addComponent(jLabel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(pending_count, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addContainerGap())
         );
         jPanel4Layout.setVerticalGroup(
@@ -228,7 +362,7 @@ public class providerdashboard extends javax.swing.JFrame {
                 .addContainerGap()
                 .addComponent(jLabel3)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 81, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(pending_count, javax.swing.GroupLayout.PREFERRED_SIZE, 81, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(23, Short.MAX_VALUE))
         );
 
@@ -240,7 +374,8 @@ public class providerdashboard extends javax.swing.JFrame {
         jLabel5.setForeground(new java.awt.Color(255, 255, 255));
         jLabel5.setText("ACTIVE BOOKINGS");
 
-        jLabel6.setIcon(new javax.swing.ImageIcon(getClass().getResource("/IMAGES/learning.png"))); // NOI18N
+        active_count.setFont(new java.awt.Font("Segoe UI", 1, 33)); // NOI18N
+        active_count.setIcon(new javax.swing.ImageIcon(getClass().getResource("/IMAGES/learning.png"))); // NOI18N
 
         javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
         jPanel5.setLayout(jPanel5Layout);
@@ -251,7 +386,7 @@ public class providerdashboard extends javax.swing.JFrame {
                 .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel5Layout.createSequentialGroup()
                         .addGap(10, 10, 10)
-                        .addComponent(jLabel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addComponent(active_count, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addComponent(jLabel5, javax.swing.GroupLayout.DEFAULT_SIZE, 136, Short.MAX_VALUE))
                 .addContainerGap())
         );
@@ -261,7 +396,7 @@ public class providerdashboard extends javax.swing.JFrame {
                 .addContainerGap()
                 .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel6, javax.swing.GroupLayout.DEFAULT_SIZE, 87, Short.MAX_VALUE)
+                .addComponent(active_count, javax.swing.GroupLayout.DEFAULT_SIZE, 87, Short.MAX_VALUE)
                 .addGap(18, 18, 18))
         );
 
@@ -273,7 +408,8 @@ public class providerdashboard extends javax.swing.JFrame {
         jLabel7.setForeground(new java.awt.Color(255, 255, 255));
         jLabel7.setText("TOTAL EARNINGS");
 
-        jLabel8.setIcon(new javax.swing.ImageIcon(getClass().getResource("/IMAGES/salary.png"))); // NOI18N
+        earnings_count.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
+        earnings_count.setIcon(new javax.swing.ImageIcon(getClass().getResource("/IMAGES/salary.png"))); // NOI18N
 
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
@@ -281,14 +417,12 @@ public class providerdashboard extends javax.swing.JFrame {
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel6Layout.createSequentialGroup()
                 .addGap(21, 21, 21)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel6Layout.createSequentialGroup()
-                        .addGap(10, 10, 10)
-                        .addComponent(jLabel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addContainerGap())
-                    .addGroup(jPanel6Layout.createSequentialGroup()
-                        .addComponent(jLabel7, javax.swing.GroupLayout.DEFAULT_SIZE, 128, Short.MAX_VALUE)
-                        .addGap(21, 21, 21))))
+                .addComponent(jLabel7, javax.swing.GroupLayout.DEFAULT_SIZE, 128, Short.MAX_VALUE)
+                .addGap(21, 21, 21))
+            .addGroup(jPanel6Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(earnings_count, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
         );
         jPanel6Layout.setVerticalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -296,7 +430,7 @@ public class providerdashboard extends javax.swing.JFrame {
                 .addContainerGap()
                 .addComponent(jLabel7)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jLabel8, javax.swing.GroupLayout.PREFERRED_SIZE, 75, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(earnings_count, javax.swing.GroupLayout.PREFERRED_SIZE, 75, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(33, Short.MAX_VALUE))
         );
 
@@ -387,6 +521,16 @@ public class providerdashboard extends javax.swing.JFrame {
     this.dispose();
     }//GEN-LAST:event_jButton1ActionPerformed
 
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+      PROVIDER.providerprofile prof = new PROVIDER.providerprofile();
+    
+    // 2. I-pakita ang profile frame
+    prof.setVisible(true);
+    
+    // 3. I-close o i-hide ang kani nga dashboard
+    this.dispose();
+    }//GEN-LAST:event_jButton2ActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -424,6 +568,8 @@ public class providerdashboard extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton MyServices;
+    private javax.swing.JLabel active_count;
+    private javax.swing.JLabel earnings_count;
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton5;
@@ -433,11 +579,8 @@ public class providerdashboard extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel13;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
-    private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
-    private javax.swing.JLabel jLabel8;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel4;
@@ -445,5 +588,6 @@ public class providerdashboard extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel6;
     private javax.swing.JPanel jPanel8;
     private javax.swing.JLabel p_navbar_pic;
+    private javax.swing.JLabel pending_count;
     // End of variables declaration//GEN-END:variables
 }

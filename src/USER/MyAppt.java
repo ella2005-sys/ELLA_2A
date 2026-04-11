@@ -65,40 +65,35 @@ public class MyAppt extends javax.swing.JFrame {
   public void loadMyAppointments() {
     try {
         CONFIG.config conf = new CONFIG.config();
-
-        // Get logged-in user
         int userId = CONFIG.Session.getUserId();
 
-        // Query ONLY bookings of this user
-        String sql = "SELECT * FROM tbl_bookings WHERE u_id = " + userId;
+        // 1. Siguruha nga ang SQL columns nag-sunod sa imong JTable Headers
+        // Order: b_id (ID), s_name (Service), p_id (Provider), b_date (Date), b_address (Address), b_total (Amount), b_status (Status)
+        String sql = "SELECT b.b_id, s.s_name, b.p_id, b.b_date, b.b_address, b.b_total, b.b_status " +
+                     "FROM tbl_bookings b " +
+                     "JOIN tbl_services s ON b.s_id = s.s_id " +
+                     "WHERE b.u_id = " + userId;
 
         java.sql.ResultSet rs = conf.getData(sql);
-
-        // Load into JTable
-        javax.swing.table.DefaultTableModel model =
-                (javax.swing.table.DefaultTableModel) tbl_appointments.getModel();
-
-        model.setRowCount(0); // clear table
+        javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) tbl_appointments.getModel();
+        model.setRowCount(0); 
 
         while (rs.next()) {
-            Object[] row = new Object[]{
-                rs.getInt("b_id"),
-                rs.getInt("s_id"),        // service ID (for now)
-                rs.getInt("p_id"),        // provider ID
-                rs.getString("b_date"),
-                rs.getString("b_status"),
-                rs.getDouble("b_total"),
-                rs.getString("b_address")
-            };
-
-            model.addRow(row);
+            // 2. KINI ANG CRITICAL: Kinahanglan ang pag-add sa row mo-match sa sequence sa imong JTable columns
+            model.addRow(new Object[]{
+                rs.getInt("b_id"),          // Column 0: ID
+                rs.getString("s_name"),     // Column 1: Service
+                rs.getInt("p_id"),          // Column 2: Provider
+                rs.getString("b_date"),     // Column 3: Date
+                rs.getString("b_address"),  // Column 4: Address (Kani ang gi-input sa user)
+                rs.getDouble("b_total"),    // Column 5: Amount
+                rs.getString("b_status")    // Column 6: Status (Pending/Approved/Cancelled)
+            });
         }
-
         rs.close();
 
     } catch (Exception e) {
-        javax.swing.JOptionPane.showMessageDialog(null,
-                "Error loading appointments: " + e.getMessage());
+        System.out.println("Load Error: " + e.getMessage());
     }
 }
 
@@ -410,33 +405,55 @@ private void searchTable() {
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void viewdetailsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_viewdetailsActionPerformed
-   int row = tbl_appointments.getSelectedRow();
+                                               
+    int row = tbl_appointments.getSelectedRow();
     
-    // 1. Check kung naay napili nga row
     if (row == -1) {
         javax.swing.JOptionPane.showMessageDialog(null, "Please select a booking first!");
         return;
     }
 
     try {
-        // Kuhaon nato ang actual count sa columns para dili mo-error
         int colCount = tbl_appointments.getColumnCount();
 
-        // 2. Pagkuha sa data (Safe indexing)
+        // 1. Kuhaon ang data gikan sa table cells
         String id       = (colCount > 0) ? tbl_appointments.getValueAt(row, 0).toString() : "N/A";
         String service  = (colCount > 1) ? tbl_appointments.getValueAt(row, 1).toString() : "N/A";
-        String provider = (colCount > 2) ? tbl_appointments.getValueAt(row, 2).toString() : "Not Assigned";
+        
+        // Kani nga column (index 2) maoy naay Provider ID
+        String providerId = (colCount > 2) ? tbl_appointments.getValueAt(row, 2).toString() : ""; 
+        
         String date     = (colCount > 3) ? tbl_appointments.getValueAt(row, 3).toString() : "N/A";
         String address  = (colCount > 4) ? tbl_appointments.getValueAt(row, 4).toString() : "N/A";
         String total    = (colCount > 5) ? tbl_appointments.getValueAt(row, 5).toString() : "0.00";
-        
-        // Kung ang Status naa sa column 6, kuhaon nato. Kung wala, default sa "Pending"
         String status   = (colCount > 6) ? tbl_appointments.getValueAt(row, 6).toString() : "PENDING";
 
-        // 3. Color logic para sa Status Badge
+        // 2. SQL LOOKUP PARA SA USER_NAME (Base sa imong gi-upload nga tbl_users)
+        String providerDisplay = "Not Assigned";
+        
+        if (!providerId.isEmpty() && !providerId.equals("0") && !providerId.equalsIgnoreCase("N/A")) {
+            CONFIG.config conf = new CONFIG.config();
+            // Gamiton nato ang 'user_name' base sa imong DB structure
+            String sql = "SELECT user_name FROM tbl_users WHERE user_id = ?";
+            
+            try (java.sql.Connection conn = conf.connectDB();
+                 java.sql.PreparedStatement pst = conn.prepareStatement(sql)) {
+                
+                pst.setString(1, providerId);
+                java.sql.ResultSet rs = pst.executeQuery();
+                
+                if (rs.next()) {
+                    providerDisplay = rs.getString("user_name");
+                }
+            } catch (java.sql.SQLException e) {
+                System.out.println("Database Error: " + e.getMessage());
+            }
+        }
+
+        // 3. UI logic para sa status badge color
         String statusColor = status.equalsIgnoreCase("Pending") ? "#f0ad4e" : "#5cb85c";
 
-        // 4. Ang Nindot nga HTML Receipt Design
+        // 4. HTML Receipt Layout
         String message = "<html>"
             + "<div style='width: 320px; background-color: white; padding: 20px; font-family: Segoe UI, sans-serif;'>"
             + "  <div style='text-align: center; border-bottom: 2px dashed #1a4d80; padding-bottom: 10px; margin-bottom: 15px;'>"
@@ -446,7 +463,7 @@ private void searchTable() {
             + "  <table style='width: 100%; border-collapse: collapse;'>"
             + "    <tr><td style='padding: 3px 0; color: #777;'>Booking ID:</td><td style='text-align: right;'><b>#" + id + "</b></td></tr>"
             + "    <tr><td style='padding: 3px 0; color: #777;'>Service:</td><td style='text-align: right;'>" + service + "</td></tr>"
-            + "    <tr><td style='padding: 3px 0; color: #777;'>Provider:</td><td style='text-align: right; color: #1a4d80;'><b>" + provider + "</b></td></tr>"
+            + "    <tr><td style='padding: 3px 0; color: #777;'>Provider:</td><td style='text-align: right; color: #1a4d80;'><b>" + providerDisplay + "</b></td></tr>"
             + "    <tr><td style='padding: 3px 0; color: #777;'>Schedule:</td><td style='text-align: right;'>" + date + "</td></tr>"
             + "  </table>"
             + "  <div style='margin-top: 15px; padding: 12px; background-color: #f9f9f9; border-radius: 8px; border: 1px solid #eee;'>"
@@ -462,18 +479,16 @@ private void searchTable() {
             + "    </table>"
             + "  </div>"
             + "  <div style='text-align: center; margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px;'>"
-            + "    <p style='font-size: 9px; color: #bbb; margin: 0;'>Location: " + address + "</p>"
-            + "    <p style='font-size: 10px; color: #1a4d80; margin-top: 5px;'><b>Thank you for trusting LocalHelper!</b></p>"
+            + "    <p style='font-size: 9px; color: #bbb; margin: 0;'>Address: " + address + "</p>"
+            + "    <p style='font-size: 10px; color: #1a4d80; margin-top: 5px;'><b>Thank you for using LocalHelper!</b></p>"
             + "  </div>"
             + "</div></html>";
 
-        // 5. I-display ang Message
         javax.swing.JOptionPane.showMessageDialog(null, message, "Booking Details", javax.swing.JOptionPane.PLAIN_MESSAGE);
 
     } catch (Exception e) {
-        // I-print ang error para mahibaloan kung unsay kulang
-        System.out.println("Display Error: " + e.getMessage());
-        javax.swing.JOptionPane.showMessageDialog(null, "Error displaying details. Please try again.");
+        System.out.println("View Details Error: " + e.getMessage());
+        javax.swing.JOptionPane.showMessageDialog(null, "An error occurred while loading details.");
     }
 
 

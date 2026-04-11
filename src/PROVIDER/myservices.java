@@ -4,6 +4,7 @@ package PROVIDER;
 import ADMIN.AddService;
 import CONFIG.Session;
 import CONFIG.config;
+import static CONFIG.config.connectDB;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.event.MouseAdapter;
@@ -16,12 +17,18 @@ import javax.swing.JButton;
 import javax.swing.JOptionPane;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableModel;
+import ADMIN.EditService; // <--- DAPAT NAA NI
+import ADMIN.AddService;
 
 
 public class myservices extends javax.swing.JFrame {
     
     config cfg = new config();
+
     
+    public void onDataChange() {
+        loadServices(); // This calls your refresh method!
+    }
   
 
    public myservices() {
@@ -101,39 +108,47 @@ java.awt.Color white = java.awt.Color.WHITE;
     }
    
    
-  private void loadServices() {
-    try {
-        Connection conn = cfg.getConnection();
-        int currentId = CONFIG.Session.getUserId(); 
-
-        // SELECT * mokuha sa tanang columns base sa order sa imong screenshot
-        String sql = "SELECT * FROM tbl_services WHERE provider_id = ?";
-        PreparedStatement pst = conn.prepareStatement(sql);
-        pst.setInt(1, currentId);
-        ResultSet rs = pst.executeQuery();
-
-        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
-// I-set ang column names nga sakto sa imong database scheme
-String[] columnNames = {"ID", "Service Name", "Category", "Price", "Status"};
-model.setColumnIdentifiers(columnNames); 
-model.setRowCount(0);
-
-        while (rs.next()) {
-            model.addRow(new Object[]{
-                rs.getObject(1), // s_id (Index 1)
-                rs.getObject(2), // s_name (Index 2)
-                rs.getObject(3), // s_category (Index 3)
-                rs.getObject(4), // s_price (Index 4)
-                rs.getObject(5)  // s_status (Index 5)
-            });
-        }
+    private void loadServices() {
+    String sql = "SELECT s_id, s_name, s_category, s_price, s_status FROM tbl_services WHERE provider_id = ?";
+    
+    try (java.sql.Connection conn = connectDB(); 
+         java.sql.PreparedStatement pst = conn.prepareStatement(sql)) {
         
-        rs.close();
-        pst.close();
-        conn.close();
-    } catch (Exception e) {
-        JOptionPane.showMessageDialog(this, "Table Load Error: " + e.getMessage());
+        int currentId = CONFIG.Session.getUserId(); 
+        pst.setInt(1, currentId);
+        
+        try (java.sql.ResultSet rs = pst.executeQuery()) {
+            DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+            
+            // IMPORTANT: This clears the table so you don't see the "old" list combined with the new one
+            model.setRowCount(0); 
+
+            String[] columnNames = {"ID", "Service Name", "Category", "Price", "Status"};
+            model.setColumnIdentifiers(columnNames); 
+
+            while (rs.next()) {
+                model.addRow(new Object[]{
+                    rs.getInt("s_id"),
+                    rs.getString("s_name"),
+                    rs.getString("s_category"),
+                    rs.getString("s_price"),
+                    rs.getString("s_status")
+                });
+            }
+        }
+        // This ensures the UI actually "sees" the change
+        jTable1.revalidate();
+        jTable1.repaint();
+
+    } catch (java.sql.SQLException e) {
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Refresh Error: " + e.getMessage());
     }
+}
+    
+    // I-add ni sa myservices.java
+public void refreshTable() {
+    loadServices();
 }
 
 
@@ -144,40 +159,52 @@ model.setRowCount(0);
    
    private void addService() {
     try {
-        String name = JOptionPane.showInputDialog(this, "Enter Service Name:");
+        // 1. Collect inputs via Dialogs
+        String name = javax.swing.JOptionPane.showInputDialog(this, "Enter Service Name:");
         if (name == null || name.trim().isEmpty()) return;
 
-        String category = JOptionPane.showInputDialog(this, "Enter Service Category:");
+        String category = javax.swing.JOptionPane.showInputDialog(this, "Enter Service Category:");
         if (category == null || category.trim().isEmpty()) return;
 
-        String priceStr = JOptionPane.showInputDialog(this, "Enter Service Price:");
+        String priceStr = javax.swing.JOptionPane.showInputDialog(this, "Enter Service Price:");
         if (priceStr == null || priceStr.trim().isEmpty()) return;
         double price = Double.parseDouble(priceStr);
 
-        // Insert into database
-        Connection conn = cfg.getConnection();
-        String sql = "INSERT INTO tbl_services (service_name, category, price, provider_id) VALUES (?, ?, ?, ?)";
-        PreparedStatement pst = conn.prepareStatement(sql);
-        pst.setString(1, name);
-        pst.setString(2, category);
-        pst.setDouble(3, price);
-        pst.setInt(4, Session.getUserId());
+        // 2. Prepare the SQL
+        String sql = "INSERT INTO tbl_services (s_name, s_category, s_price, s_status, provider_id) VALUES (?, ?, ?, ?, ?)";
+        
+        try (java.sql.Connection conn = connectDB(); 
+             java.sql.PreparedStatement pst = conn.prepareStatement(sql)) {
+            
+            pst.setString(1, name);
+            pst.setString(2, category);
+            pst.setDouble(3, price);
+            pst.setString(4, "Available"); 
+            pst.setInt(5, CONFIG.Session.getUserId());
 
-        int inserted = pst.executeUpdate();
-        if (inserted > 0) {
-            JOptionPane.showMessageDialog(this, "Service added successfully!");
-            loadServices(); // reload table
+            int inserted = pst.executeUpdate();
+            
+            if (inserted > 0) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Record added successfully!");
+                
+                // 3. THE FIX: Refresh the current table immediately
+                loadServices(); 
+                
+                // Optional: Force the UI to repaint so the change is visible instantly
+                jTable1.revalidate();
+                jTable1.repaint();
+            }
         }
 
-        pst.close();
-        conn.close();
-
     } catch (NumberFormatException e) {
-        JOptionPane.showMessageDialog(this, "Invalid price value!");
+        javax.swing.JOptionPane.showMessageDialog(this, "Invalid price! Please enter a number.");
     } catch (Exception e) {
-        JOptionPane.showMessageDialog(this, "Error adding service: " + e.getMessage());
+        e.printStackTrace();
+        javax.swing.JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
     }
-     this.dispose();
+    
+    // IMPORTANT: Do not use this.dispose() here and do not 
+    // create a 'new myservices().setVisible(true)' here.
 }
    
    private void applyDashboardStyle(javax.swing.JButton btn, java.awt.Color baseColor) {
@@ -330,9 +357,8 @@ model.setRowCount(0);
     }// </editor-fold>//GEN-END:initComponents
 
     private void AddServiceActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddServiceActionPerformed
-       AddService add = new AddService(CONFIG.Session.getUserId()); // pass provider ID
+    ADMIN.AddService add = new ADMIN.AddService(CONFIG.Session.getUserId(), this); 
     add.setVisible(true);
-     this.dispose();
     }//GEN-LAST:event_AddServiceActionPerformed
 
     private void homeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_homeActionPerformed
@@ -342,39 +368,37 @@ model.setRowCount(0);
     }//GEN-LAST:event_homeActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-     int row = jTable1.getSelectedRow();
-     
-     String sql = "UPDATE tbl_services SET s_name=?, s_category=?, s_price=?, s_status=? WHERE s_id=?";
-    
+ int row = jTable1.getSelectedRow();
     if (row == -1) {
-        JOptionPane.showMessageDialog(this, "Palihug choose a row in the table!");
-    } else {
-        String id = jTable1.getValueAt(row, 0).toString();
-        String name = jTable1.getValueAt(row, 1).toString();
-        String cat = jTable1.getValueAt(row, 2).toString();
-        String price = jTable1.getValueAt(row, 3).toString();
-        String status = jTable1.getValueAt(row, 4).toString();
-
-        ADMIN.EditService edit = new ADMIN.EditService();
-        
-        // Tawgon ang setter nga atong gi-fix sa taas
-        edit.setServiceData(id, name, cat, price, status);
-        
-        edit.setVisible(true);
-        this.dispose(); // I-close ang current frame
+        JOptionPane.showMessageDialog(this, "Please select a row!");
+        return;
     }
+    
+    // Wala na dapat error diri basta na-save na nimo ang EditService.java
+    EditService edit = new EditService(this); 
+    
+    String id = jTable1.getValueAt(row, 0).toString();
+    String name = jTable1.getValueAt(row, 1).toString();
+    String cat = jTable1.getValueAt(row, 2).toString();
+    String price = jTable1.getValueAt(row, 3).toString();
+    String status = jTable1.getValueAt(row, 4).toString();
+
+    edit.setServiceData(id, name, cat, price, status);
+    edit.setVisible(true);
+
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-      int row = jTable1.getSelectedRow();
+     int row = jTable1.getSelectedRow();
     if (row == -1) {
         JOptionPane.showMessageDialog(this, "Please select a service to delete.");
     } else {
         String id = jTable1.getValueAt(row, 0).toString();
         int confirm = JOptionPane.showConfirmDialog(this, "Delete this service?", "Warning", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
-            cfg.deleteData("DELETE FROM tbl_services WHERE service_id = '" + id + "'");
-            loadServices(); // Refresh table
+            // Change service_id to s_id to match your database schema
+            cfg.deleteData("DELETE FROM tbl_services WHERE s_id = '" + id + "'");
+            loadServices(); // This refreshes the table instantly
         }
     }
     }//GEN-LAST:event_jButton2ActionPerformed

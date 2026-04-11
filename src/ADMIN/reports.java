@@ -3,8 +3,15 @@ package ADMIN;
 
 import javax.swing.table.DefaultTableModel;
 import CONFIG.config;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.text.MessageFormat;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JTable;
+import javax.swing.SwingConstants;
 
 
 
@@ -12,57 +19,81 @@ public class reports extends javax.swing.JFrame {
 
      config cfg = new config();
     public reports() {
-       new CONFIG.config().sessionGuard(this);
-        initComponents();
-        setLocationRelativeTo(null);
+    new CONFIG.config().sessionGuard(this);
+    initComponents();
+    setLocationRelativeTo(null);
     setupTable();
     
+    // Custom Colors
     java.awt.Color navy = new java.awt.Color(35, 66, 106);
-    java.awt.Color logoutBrown = new java.awt.Color(106, 75, 35);
-     applyAdminButtonStyle(jButton1, navy); // Users
-     applyAdminButtonStyle(print, navy); // Users
+    java.awt.Color successGreen = new java.awt.Color(40, 167, 69);
+    java.awt.Color accentOrange = new java.awt.Color(255, 152, 0);
+
+    applyAdminButtonStyle(jButton1, navy); 
+    applyAdminButtonStyle(print, navy); 
+
+    // --- STYLE PARA SA TOTAL REVENUE CARD ---
+    jLabel_TotalRevenue.setOpaque(true);
+    jLabel_TotalRevenue.setBackground(Color.WHITE);
+    jLabel_TotalRevenue.setForeground(successGreen);
+    jLabel_TotalRevenue.setHorizontalAlignment(SwingConstants.CENTER);
+    jLabel_TotalRevenue.setBorder(BorderFactory.createCompoundBorder(
+        BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
+        BorderFactory.createEmptyBorder(5, 15, 5, 15)
+    ));
+
+    // --- STYLE PARA SA TOP SERVICE CARD ---
+    jLabel_MostBooked.setOpaque(true);
+    jLabel_MostBooked.setBackground(Color.WHITE);
+    jLabel_MostBooked.setForeground(navy);
+    jLabel_MostBooked.setHorizontalAlignment(SwingConstants.CENTER);
+    jLabel_MostBooked.setBorder(BorderFactory.createCompoundBorder(
+        BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
+        BorderFactory.createEmptyBorder(5, 15, 5, 15)
+    ));
+
+    // --- MODERN TABLE RENDERER (Alternating Colors) ---
+    jTable1.setDefaultRenderer(Object.class, new javax.swing.table.DefaultTableCellRenderer() {
+        @Override
+        public java.awt.Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            java.awt.Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            
+            // Alternating Row Colors
+            if (!isSelected) {
+                c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(245, 248, 250));
+            }
+            
+            // Specific Style for Revenue Column
+            if(column == 3){
+                c.setForeground(new Color(0, 102, 51));
+                setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
+            } else {
+                c.setForeground(Color.BLACK);
+            }
+            
+            setBorder(noFocusBorder);
+            setHorizontalAlignment(column == 1 ? SwingConstants.LEFT : SwingConstants.CENTER);
+            return c;
+        }
+    });
+
     displayReports();
-    
-    
-    // Style para sa Total Revenue Card
-jLabel_TotalRevenue.setOpaque(true);
-jLabel_TotalRevenue.setBackground(new java.awt.Color(240, 245, 250)); // Light Blue background
-jLabel_TotalRevenue.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(35, 66, 106), 2));
-jLabel_TotalRevenue.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 18));
-
-// Style para sa Most Booked Card
-jLabel_MostBooked.setOpaque(true);
-jLabel_MostBooked.setBackground(new java.awt.Color(250, 240, 240)); // Light Red/Pink background
-jLabel_MostBooked.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(150, 50, 50), 2));
-jLabel_MostBooked.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 14));
-
-// I-color ang Total Revenue column (Index 3)
-jTable1.getColumnModel().getColumn(3).setCellRenderer(new javax.swing.table.DefaultTableCellRenderer() {
-    @Override
-    public java.awt.Component getTableCellRendererComponent(javax.swing.JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-        java.awt.Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-        c.setForeground(new java.awt.Color(0, 102, 51)); // Dark Green
-        setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
-        setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        return c;
-    }
-});
-    
-    }
+}
   
-    public void displayReports() {
+   public void displayReports() {
     double grandTotal = 0;
     int maxBooked = -1;
     String topService = "None";
 
-    try {
-        java.sql.Connection conn = cfg.connectDB(); // Siguroha nga config method ni
-        String sql = "SELECT ts.[ s_id], ts.s_name, " +
-                     "COUNT(tb.b_id) AS total_booked, " +
-                     "SUM(CASE WHEN tb.b_status IN ('COMPLETED', 'APPROVED') THEN tb.b_total ELSE 0 END) AS total_revenue " +
-                     "FROM tbl_services ts " +
-                     "LEFT JOIN tbl_bookings tb ON ts.[ s_id] = tb.s_id " +
-                     "GROUP BY ts.[ s_id], ts.s_name";
+    try (java.sql.Connection conn = cfg.connectDB()) {
+        // Gikuha na ang brackets ug spaces sa s_id
+        // Gi-join nato ang tbl_services ug tbl_bookings para makuha ang presyo ug status
+String sql = "SELECT ts.s_id, ts.s_name, " +
+             "COUNT(CASE WHEN tb.b_status IN ('COMPLETED','Completed' ,'Approved', 'APPROVED') THEN tb.b_id END) AS total_booked, " +
+             "SUM(CASE WHEN tb.b_status IN ('COMPLETED','Completed' ,'Approved', 'APPROVED') THEN tb.b_total ELSE 0 END) AS total_revenue " +
+             "FROM tbl_services ts " +
+             "LEFT JOIN tbl_bookings tb ON ts.s_id = tb.s_id " +
+             "GROUP BY ts.s_id, ts.s_name";
 
         java.sql.PreparedStatement pst = conn.prepareStatement(sql);
         java.sql.ResultSet rs = pst.executeQuery();
@@ -70,31 +101,39 @@ jTable1.getColumnModel().getColumn(3).setCellRenderer(new javax.swing.table.Defa
         model.setRowCount(0); 
 
         while (rs.next()) {
-            int bookedCount = rs.getInt("total_booked");
-            double revenue = rs.getDouble("total_revenue");
-            String sName = rs.getString("s_name");
+    int bookedCount = rs.getInt("total_booked");
+    double revenue = rs.getDouble("total_revenue"); // Mao ni ang (Price x Completed)
+    String sName = rs.getString("s_name");
 
-            model.addRow(new Object[]{
-                rs.getInt(1),
-                sName,
-                bookedCount,
-                "₱" + String.format("%,.2f", revenue) // Naay comma (e.g., 1,000.00)
-            });
+    model.addRow(new Object[]{
+        rs.getInt("s_id"),
+        sName,
+        bookedCount,
+        "₱" + String.format("%,.2f", revenue) // Mugawas ang ₱1,600.00
+    });
 
-            grandTotal += revenue;
+    grandTotal += revenue;
+            
+            // Logic para sa Top Performing Service
             if (bookedCount > maxBooked && bookedCount > 0) {
                 maxBooked = bookedCount;
                 topService = sName;
             }
         }
         
-        // Modern Style Updates
+        // Update ang mga Labels (Grand Total ug Top Service)
         jLabel_TotalRevenue.setText("GRAND TOTAL: ₱" + String.format("%,.2f", grandTotal));
-        jLabel_MostBooked.setText("★ TOP PERFORMING SERVICE: " + topService.toUpperCase());
+        
+        if (maxBooked > 0) {
+            jLabel_MostBooked.setText("★ TOP SERVICE: " + topService.toUpperCase() + " (" + maxBooked + " bookings)");
+        } else {
+            jLabel_MostBooked.setText("★ TOP SERVICE: NO DATA");
+        }
 
-        rs.close(); pst.close(); conn.close();
+        rs.close(); 
+        pst.close();
     } catch (Exception e) {
-        System.out.println("Report Error: " + e.getMessage());
+        javax.swing.JOptionPane.showMessageDialog(this, "Report Error: " + e.getMessage());
     }
 }
  
@@ -107,48 +146,46 @@ private void setupTable() {
         public boolean isCellEditable(int row, int column) { return false; }
     });
     
-    // Header Style
-    jTable1.getTableHeader().setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 14));
-    jTable1.getTableHeader().setBackground(new java.awt.Color(35, 66, 106));
-    jTable1.getTableHeader().setForeground(java.awt.Color.WHITE);
-    jTable1.getTableHeader().setPreferredSize(new java.awt.Dimension(0, 40));
-    jTable1.getTableHeader().setOpaque(true);
-    
-    // Row Style
-    jTable1.setRowHeight(35);
+    // Table Properties
     jTable1.setShowGrid(false);
     jTable1.setIntercellSpacing(new java.awt.Dimension(0, 0));
-    jTable1.setSelectionBackground(new java.awt.Color(220, 230, 245));
-
-    // Center alignment para sa tanang columns
-    javax.swing.table.DefaultTableCellRenderer centerRenderer = new javax.swing.table.DefaultTableCellRenderer();
-    centerRenderer.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-    for(int i = 0; i < jTable1.getColumnCount(); i++) {
-        jTable1.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
-    }
-}
-
- private void applyAdminButtonStyle(javax.swing.JButton btn, java.awt.Color baseColor) {
-    btn.setBorderPainted(false);
-    btn.setFocusPainted(false);
-    btn.setContentAreaFilled(false); 
-    btn.setOpaque(true); 
-    btn.setBackground(baseColor);
-    btn.setForeground(java.awt.Color.WHITE);
-    btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-    btn.setFont(new java.awt.Font("Segoe UI Semibold", java.awt.Font.PLAIN, 14));
+    jTable1.setSelectionBackground(new Color(232, 242, 252));
+    jTable1.setSelectionForeground(Color.BLACK);
     
-    btn.addMouseListener(new java.awt.event.MouseAdapter() {
-        @Override
-        public void mouseEntered(java.awt.event.MouseEvent evt) {
-            btn.setBackground(baseColor.brighter()); 
-        }
-        @Override
-        public void mouseExited(java.awt.event.MouseEvent evt) {
-            btn.setBackground(baseColor);
-        }
-    });
+    // Modern Header
+    jTable1.getTableHeader().setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 13));
+    jTable1.getTableHeader().setBackground(new java.awt.Color(35, 66, 106));
+    jTable1.getTableHeader().setForeground(java.awt.Color.WHITE);
+    jTable1.getTableHeader().setPreferredSize(new java.awt.Dimension(100, 40));
+    jTable1.getTableHeader().setBorder(null);
+    
+    jTable1.setRowHeight(40);
 }
+
+ private void applyAdminButtonStyle(JButton btn, Color baseColor) {
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setContentAreaFilled(false);
+        btn.setOpaque(true);
+        btn.setBackground(baseColor);
+        btn.setForeground(Color.WHITE);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setHorizontalAlignment(SwingConstants.LEFT);
+        btn.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
+
+        btn.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent evt) {
+                btn.setBackground(baseColor.brighter());
+                btn.setBorder(BorderFactory.createMatteBorder(0, 5, 0, 0, Color.WHITE));
+            }
+            @Override
+            public void mouseExited(MouseEvent evt) {
+                btn.setBackground(baseColor);
+                btn.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
+            }
+        });
+    }
  
  private void printBtnActionPerformed(java.awt.event.ActionEvent evt) {                                         
     // This creates the professional header and footer for your printed page
@@ -206,7 +243,7 @@ private void setupTable() {
                 jButton1ActionPerformed(evt);
             }
         });
-        jPanel2.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(90, 190, 150, 35));
+        jPanel2.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 190, 260, 35));
 
         print.setBackground(new java.awt.Color(35, 66, 106));
         print.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
@@ -217,7 +254,7 @@ private void setupTable() {
                 printActionPerformed(evt);
             }
         });
-        jPanel2.add(print, new org.netbeans.lib.awtextra.AbsoluteConstraints(90, 270, 150, 40));
+        jPanel2.add(print, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 270, 260, 40));
 
         jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 50, 320, 600));
 
@@ -288,23 +325,69 @@ private void setupTable() {
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void printActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_printActionPerformed
-      // 1. Create the professional header and footer
-    MessageFormat header = new MessageFormat("LocalHelper - Service Revenue Report");
-    MessageFormat footer = new MessageFormat("Page {0,number,integer}");
+     StringBuilder sb = new StringBuilder();
     
+    // Step 1: HTML Header with CSS
+    sb.append("<html><head><meta charset='utf-8'><style>"); // Added meta charset for Peso sign
+    sb.append("table { border-collapse: collapse; width: 100%; font-family: 'Segoe UI', Arial; }");
+    sb.append("th, td { border: 1px solid #dddddd; text-align: left; padding: 10px; }");
+    sb.append("th { background-color: #23426A; color: white; }");
+    sb.append("h2 { color: #23426A; font-family: 'Segoe UI Black', Arial; }");
+    sb.append(".total { color: #28a745; font-size: 14pt; font-weight: bold; }");
+    sb.append("</style></head><body>");
+    
+    // Step 2: Content
+    sb.append("<h2>LOCALHELPER - SERVICE REVENUE REPORT</h2>");
+    sb.append("<p>Report Date: ").append(new java.util.Date().toString()).append("</p>");
+    
+    sb.append("<table>");
+    sb.append("<thead><tr><th>ID</th><th>Service Name</th><th>Booked</th><th>Revenue</th></tr></thead>");
+    sb.append("<tbody>");
+
+    // Loop through JTable rows
+    // Inside your for loop
+    for (int i = 0; i < jTable1.getRowCount(); i++) {
+        sb.append("<tr>");
+        sb.append("<td>").append(jTable1.getValueAt(i, 0)).append("</td>");
+        sb.append("<td>").append(jTable1.getValueAt(i, 1)).append("</td>");
+        sb.append("<td>").append(jTable1.getValueAt(i, 2)).append("</td>");
+
+        // REMOVED the extra "₱" here because getValueAt(i, 3) already includes it
+        sb.append("<td>").append(jTable1.getValueAt(i, 3)).append("</td>"); 
+        sb.append("</tr>");
+    }
+
+    sb.append("</table><br>");
+
+    // Summary Section
+    sb.append("<div style='font-size: 14pt;'>");
+    // Ensure your Label text isn't adding another one
+    sb.append("<p style='color: #28a745;'><b>").append(jLabel_TotalRevenue.getText()).append("</b></p>");
+    sb.append("<p><b>").append(jLabel_MostBooked.getText()).append("</b></p>");
+    sb.append("</div>");
+
     try {
-        // 2. This command opens the system print dialog and formats your table
-        // FIT_WIDTH ensures the table doesn't get cut off on the paper
-        boolean complete = jTable1.print(JTable.PrintMode.FIT_WIDTH, header, footer);
-        
-        if (complete) {
-            javax.swing.JOptionPane.showMessageDialog(this, "Printing Complete!", "Printer", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+        // Create the file in the user's Documents folder instead of Temp 
+        // usahay ang Temp folder naay restriction si Word.
+        String userHome = System.getProperty("user.home");
+        java.io.File reportFile = new java.io.File(userHome + "\\Desktop\\LocalHelper_Report.doc");
+
+        // Write using UTF-8 to keep the ₱ symbol safe
+        java.io.FileOutputStream fos = new java.io.FileOutputStream(reportFile);
+        java.io.OutputStreamWriter osw = new java.io.OutputStreamWriter(fos, java.nio.charset.StandardCharsets.UTF_8);
+        osw.write(sb.toString());
+        osw.close();
+
+        // Step 4: Open in Word
+        if (java.awt.Desktop.isDesktopSupported()) {
+            java.awt.Desktop.getDesktop().open(reportFile);
         } else {
-            System.out.println("Printing Cancelled");
+            javax.swing.JOptionPane.showMessageDialog(this, "Report saved to Desktop.");
         }
-    } catch (java.awt.print.PrinterException e) {
-        javax.swing.JOptionPane.showMessageDialog(this, "Printer Error: " + e.getMessage());
-    }      // Closes the dashboard so only one window is open
+        
+    } catch (java.io.IOException e) {
+        javax.swing.JOptionPane.showMessageDialog(this, "Error generating report: " + e.getMessage());
+    }
     }//GEN-LAST:event_printActionPerformed
 
     /**

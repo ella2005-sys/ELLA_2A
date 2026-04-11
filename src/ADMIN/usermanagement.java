@@ -187,14 +187,26 @@ public class usermanagement extends JFrame {
  
 
   private void deleteUser() {
-        int row = jTable1.getSelectedRow();
-        if (row == -1) {
-            JOptionPane.showMessageDialog(this, "Please select a user first!");
+    int viewRow = jTable1.getSelectedRow();
+    if (viewRow == -1) {
+        JOptionPane.showMessageDialog(this, "Please select a user first!");
+        return;
+    }
+
+    int modelRow = jTable1.convertRowIndexToModel(viewRow);
+
+    try {
+        // FIX: Column 0 is the Icon, Column 1 is the ID
+        Object idValue = jTable1.getValueAt(modelRow, 1); 
+        
+        if (idValue == null) {
+            JOptionPane.showMessageDialog(this, "Error: User ID is missing in the table.");
             return;
         }
 
-        String userId = jTable1.getValueAt(row, 0).toString();
-        String userName = jTable1.getValueAt(row, 1).toString();
+        // Convert to String, trim, and then parse to Integer
+        int userId = Integer.parseInt(idValue.toString().trim());
+        String userName = jTable1.getValueAt(modelRow, 2).toString(); // Name is at index 2
 
         int confirm = JOptionPane.showConfirmDialog(
             this,
@@ -205,16 +217,22 @@ public class usermanagement extends JFrame {
         );
 
         if (confirm == JOptionPane.YES_OPTION) {
-            try {
-                String sql = "DELETE FROM tbl_users WHERE user_id = ?";
-                cfg.executeSQL(sql, userId);
-                JOptionPane.showMessageDialog(this, "User successfully deleted!");
-                loadUsers();
-            } catch (Exception e) {
-                JOptionPane.showMessageDialog(this, "Error deleting user: " + e.getMessage());
-            }
+            String sql = "DELETE FROM tbl_users WHERE user_id = ?";
+            
+            // This will now send the correct Integer ID to your config class
+            cfg.executeSQL(sql, userId); 
+            
+            JOptionPane.showMessageDialog(this, "User successfully deleted!");
+            displayUsers(); // This refreshes your table
         }
+    } catch (NumberFormatException e) {
+        // This happened because we were looking at Column 0 (the Icon) instead of Column 1 (the ID)
+        JOptionPane.showMessageDialog(this, "Error: Selected ID is not a valid number.");
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
     }
+}
+  
   private void goBackHome() {
         admindashboard dashboard = new admindashboard();
         dashboard.setVisible(true);

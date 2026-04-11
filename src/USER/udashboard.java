@@ -17,15 +17,18 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableModel;
 import CONFIG.config;
+import java.awt.Image;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import javax.swing.ImageIcon;
 
 public class udashboard extends javax.swing.JFrame {
 
    public udashboard() {
     initComponents();
+    loadUserProfile();
     
      Color navy = new Color(35, 66, 106);
      Color logoutBrown = new Color(106, 75, 35);
@@ -35,6 +38,22 @@ public class udashboard extends javax.swing.JFrame {
     applyAdminButtonStyle(jButton3, navy); 
     applyAdminButtonStyle(jButton5, navy);   
     applyAdminButtonStyle(jButton6, logoutBrown);
+    
+    
+    // My Bookings (Orange/Coral)
+    stylePanelCard(jPanel4, new java.awt.Color(255, 111, 94));
+    
+    // Total Spent (Teal/Green)
+    stylePanelCard(jPanel5, new java.awt.Color(78, 205, 196));
+    
+    // Account Status (Yellow/Gold)
+    stylePanelCard(jPanel6, new java.awt.Color(255, 201, 113));
+    
+    // My Profile (Purple)
+    stylePanelCard(jPanel7, new java.awt.Color(109, 89, 122));
+    
+    // Logout (Red)
+    stylePanelCard(jPanel3, new java.awt.Color(230, 57, 70));
     
     styleAdminButtons(searchText, new java.awt.Color(60, 120, 60));// Logout
     
@@ -71,6 +90,38 @@ public class udashboard extends javax.swing.JFrame {
     jComboBox1.setForeground(new java.awt.Color(35, 66, 106));
     jComboBox1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(35, 66, 106), 1));
     ((javax.swing.JLabel)jComboBox1.getRenderer()).setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+    
+    
+    try {
+        int userId = CONFIG.Session.getUserId();
+
+        String sql = "SELECT user_image FROM tbl_users WHERE user_id = ?";
+
+        try (java.sql.Connection conn = CONFIG.config.connectDB();
+             java.sql.PreparedStatement pst = conn.prepareStatement(sql)) {
+
+            pst.setInt(1, userId);
+
+            try (java.sql.ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    String imagePath = rs.getString("user_image");
+
+                    if (imagePath != null && !imagePath.isEmpty()) {
+                        c_navbar_pic.setVisible(true);
+                        setCircularImage(c_navbar_pic, imagePath);
+                    } else {
+                        c_navbar_pic.setVisible(false);
+                    }
+                }
+            }
+        }
+        
+        
+
+    } catch (Exception e) {
+        c_navbar_pic.setVisible(false);
+        System.out.println("Navbar Image Error: " + e.getMessage());
+    }
 
     // 5. Load Data
     loadAvailableServices();
@@ -258,7 +309,7 @@ public class udashboard extends javax.swing.JFrame {
     }
 
        private void openProfile() {
-        new userprofile().setVisible(true);
+        new cusprofile().setVisible(true);
         this.dispose();
     }
        private void logout() {
@@ -267,6 +318,95 @@ public class udashboard extends javax.swing.JFrame {
         lp.setLocationRelativeTo(null);
         this.dispose();
     }
+       private void MyAppt() {
+        new cusprofile().setVisible(true);
+        this.dispose();
+    }
+       
+       private void stylePanelCard(javax.swing.JPanel panel, java.awt.Color originalColor) {
+    panel.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+    
+    panel.addMouseListener(new java.awt.event.MouseAdapter() {
+        @Override
+        public void mouseEntered(java.awt.event.MouseEvent evt) {
+            panel.setBackground(originalColor.brighter()); // Mo-light ang color
+        }
+
+        @Override
+        public void mouseExited(java.awt.event.MouseEvent evt) {
+            panel.setBackground(originalColor); // Balik sa original
+        }
+    });
+}
+       
+       private void displayImage(String path, javax.swing.JLabel label) {
+    try {
+        // 1. Load the image from the path
+        ImageIcon ii = new ImageIcon(path);
+        Image img = ii.getImage().getScaledInstance(label.getWidth(), label.getHeight(), Image.SCALE_SMOOTH);
+        
+        // 2. Create a blank canvas (BufferedImage)
+        java.awt.image.BufferedImage bufferedImage = new java.awt.image.BufferedImage(
+            label.getWidth(), label.getHeight(), java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        
+        // 3. Draw the circle
+        java.awt.Graphics2D g2 = bufferedImage.createGraphics();
+        g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setClip(new java.awt.geom.Ellipse2D.Float(0, 0, label.getWidth(), label.getHeight()));
+        g2.drawImage(img, 0, 0, null);
+        g2.dispose();
+        
+        // 4. Set the circle image to your Label
+        label.setIcon(new ImageIcon(bufferedImage));
+    } catch (Exception e) {
+        System.out.println("Display Error: " + e.getMessage());
+    }
+}
+       
+     private void loadUserProfile() {
+    int userId = CONFIG.Session.getUserId(); // Mukuha sa ID sa ga-login
+    String sql = "SELECT user_image FROM tbl_users WHERE user_id = ?";
+
+    try (java.sql.Connection conn = CONFIG.config.connectDB();
+         java.sql.PreparedStatement pst = conn.prepareStatement(sql)) {
+
+        pst.setInt(1, userId);
+        java.sql.ResultSet rs = pst.executeQuery();
+
+        if (rs.next()) {
+            String path = rs.getString("user_image");
+            if (path != null && !path.isEmpty()) {
+                // Tawgon ang displayImage method para sa jLabel2
+                displayImage(path, jLabel2); 
+            }
+        }
+    } catch (Exception e) {
+        System.out.println("Database Error: " + e.getMessage());
+    }
+}
+     
+      public void setCircularImage(javax.swing.JLabel label, String path) {
+    try {
+        javax.swing.ImageIcon icon = new javax.swing.ImageIcon(path);
+        java.awt.Image img = icon.getImage();
+        
+        // Paghimo og Buffered Image para sa rounding effect
+        int width = label.getWidth();
+        int height = label.getHeight();
+        java.awt.image.BufferedImage bi = new java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        java.awt.Graphics2D g2 = bi.createGraphics();
+        
+        // Smoothing / Antialiasing
+        g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setClip(new java.awt.geom.Ellipse2D.Float(0, 0, width, height));
+        g2.drawImage(img, 0, 0, width, height, null);
+        g2.dispose();
+        
+        label.setIcon(new javax.swing.ImageIcon(bi));
+    } catch (Exception e) {
+        System.out.println("Error setting circular image: " + e.getMessage());
+    }
+}
        
      
     
@@ -312,6 +452,7 @@ public class udashboard extends javax.swing.JFrame {
         jLabel9 = new javax.swing.JLabel();
         jLabel10 = new javax.swing.JLabel();
         jLabel11 = new javax.swing.JLabel();
+        c_navbar_pic = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -419,6 +560,11 @@ public class udashboard extends javax.swing.JFrame {
         jPanel1.add(jLabel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(360, 60, 460, 60));
 
         jPanel4.setBackground(new java.awt.Color(255, 111, 94));
+        jPanel4.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jPanel4MouseClicked(evt);
+            }
+        });
         jPanel4.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         jLabel5.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
@@ -519,6 +665,11 @@ public class udashboard extends javax.swing.JFrame {
         jPanel1.add(searchText, new org.netbeans.lib.awtextra.AbsoluteConstraints(810, 470, 110, 30));
 
         jPanel7.setBackground(new java.awt.Color(109, 89, 122));
+        jPanel7.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jPanel7MouseClicked(evt);
+            }
+        });
 
         jLabel9.setFont(new java.awt.Font("Segoe UI Black", 0, 14)); // NOI18N
         jLabel9.setForeground(new java.awt.Color(255, 255, 255));
@@ -555,6 +706,9 @@ public class udashboard extends javax.swing.JFrame {
         jLabel11.setForeground(new java.awt.Color(35, 66, 106));
         jLabel11.setText("To book an appointment, please select in the table");
         jPanel1.add(jLabel11, new org.netbeans.lib.awtextra.AbsoluteConstraints(410, 410, 510, 50));
+
+        c_navbar_pic.setPreferredSize(new java.awt.Dimension(65, 65));
+        jPanel1.add(c_navbar_pic, new org.netbeans.lib.awtextra.AbsoluteConstraints(840, 30, 80, 70));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -744,6 +898,14 @@ if (selectedItem != null) {
         System.out.println("Live Search Error: " + e.getMessage());
     }
     }//GEN-LAST:event_jTextField1KeyReleased
+
+    private void jPanel7MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jPanel7MouseClicked
+        openProfile();
+    }//GEN-LAST:event_jPanel7MouseClicked
+
+    private void jPanel4MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jPanel4MouseClicked
+        MyAppt();
+    }//GEN-LAST:event_jPanel4MouseClicked
 /**
      * @param args the command line arguments
      */ // <--- You need this closing comment tag
@@ -761,6 +923,7 @@ if (selectedItem != null) {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton BookAService;
+    private javax.swing.JLabel c_navbar_pic;
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton3;
     private javax.swing.JButton jButton5;

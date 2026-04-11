@@ -12,6 +12,7 @@ import USER.udashboard;
 import ADMIN.admindashboard;
 import PROVIDER.providerdashboard;
 import CONFIG.Session;
+import java.util.prefs.Preferences;
 
 
 
@@ -26,49 +27,46 @@ public class login extends javax.swing.JFrame {
      */
    public login() {
     initComponents();
-    
+    loadSavedCredentials();
 
-    jLabel5.setText(
-        "<html>Don’t have an account? <a href=''>Sign Up here.</a></html>"
-    );
-    jLabel5.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-    jLabel5.addMouseListener(new java.awt.event.MouseAdapter() {
-        @Override
-        public void mouseClicked(java.awt.event.MouseEvent evt) {
-            register reg = new register(); // open register form
-            reg.setVisible(true);
-            reg.pack();
-            reg.setLocationRelativeTo(null); // center screen
-            dispose(); // close login form (optional)
-        }
-    });
-    
-    jLabel1.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 26)); // Title
-    jLabel2.setFont(new java.awt.Font("Segoe UI Semibold", java.awt.Font.PLAIN, 14)); // Label Email
-    jLabel3.setFont(new java.awt.Font("Segoe UI Semibold", java.awt.Font.PLAIN, 14)); // Label Password
-    
-    // 2. Style the Input Fields (Rounded/Modern Look)
-    styleTextField(jTextField1);
-    styleTextField(jTextField2);
-    
-    // 3. Style the Login Button
-    styleLoginButton(jButton1);
-
-    // 4. Style the "Sign Up" Link
+    // 1. Style the "Sign Up" Link (jLabel5)
     jLabel5.setText("<html>Don’t have an account? <span style='color:#23426A;'><b>Sign Up here.</b></span></html>");
     jLabel5.setCursor(new Cursor(Cursor.HAND_CURSOR));
-    
-    // 5. Remove the error-prone "jLabel5register" and use proper listener
+
+    // 2. Sign Up Listener
     jLabel5.addMouseListener(new java.awt.event.MouseAdapter() {
         @Override
         public void mouseClicked(java.awt.event.MouseEvent evt) {
             register reg = new register();
             reg.setVisible(true);
+            reg.pack();
             reg.setLocationRelativeTo(null);
             dispose();
         }
     });
+
+   // 3. ADD THIS: Forgot Password Listener (jLabel4)
+    jLabel4.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    jLabel4.addMouseListener(new java.awt.event.MouseAdapter() {
+        @Override
+        public void mouseClicked(java.awt.event.MouseEvent evt) {
+            // KANI DAPAT: verification ang tawagon, dili forgotpassword!
+            verification v = new verification(); 
+            v.setVisible(true);
+            v.pack();
+            v.setLocationRelativeTo(null);
+            dispose(); 
+        }
+    });
+
+    // Styling logic
+    jLabel1.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 26)); 
+    jLabel2.setFont(new java.awt.Font("Segoe UI Semibold", java.awt.Font.PLAIN, 14)); 
+    jLabel3.setFont(new java.awt.Font("Segoe UI Semibold", java.awt.Font.PLAIN, 14)); 
+    
+    styleTextField(jTextField1);
+    styleTextField(jTextField2);
+    styleLoginButton(jButton1);
 }
 
    
@@ -94,6 +92,17 @@ private void styleLoginButton(javax.swing.JButton btn) {
             btn.setBackground(new java.awt.Color(35, 66, 106));
         }
     });
+}
+
+private void loadSavedCredentials() {
+    Preferences prefs = Preferences.userRoot().node(this.getClass().getName());
+    boolean remember = prefs.getBoolean("remember", false);
+
+    if (remember) {
+        jTextField1.setText(prefs.get("email", ""));
+        jTextField2.setText(prefs.get("password", ""));
+        jCheckBox1.setSelected(true);
+    }
 }
    
    
@@ -143,7 +152,7 @@ private void styleLoginButton(javax.swing.JButton btn) {
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, -1, 503));
+        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 30, -1, 503));
 
         jLabel1.setBackground(new java.awt.Color(35, 66, 106));
         jLabel1.setFont(new java.awt.Font("Segoe UI Black", 0, 24)); // NOI18N
@@ -186,6 +195,11 @@ private void styleLoginButton(javax.swing.JButton btn) {
         jLabel4.setFont(new java.awt.Font("Segoe UI Black", 0, 13)); // NOI18N
         jLabel4.setForeground(new java.awt.Color(35, 66, 106));
         jLabel4.setText("Forgot Password?");
+        jLabel4.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jLabel4MouseClicked(evt);
+            }
+        });
         jPanel1.add(jLabel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(617, 253, -1, 16));
 
         jButton1.setBackground(new java.awt.Color(35, 66, 106));
@@ -215,13 +229,11 @@ private void styleLoginButton(javax.swing.JButton btn) {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 835, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, Short.MAX_VALUE))
+            .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 835, javax.swing.GroupLayout.PREFERRED_SIZE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 562, javax.swing.GroupLayout.PREFERRED_SIZE)
         );
 
         pack();
@@ -233,7 +245,7 @@ private void styleLoginButton(javax.swing.JButton btn) {
     }//GEN-LAST:event_jTextField1ActionPerformed
 
     private void jCheckBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBox1ActionPerformed
-        // TODO add your handling code here:
+     
     }//GEN-LAST:event_jCheckBox1ActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
@@ -302,6 +314,17 @@ private void styleLoginButton(javax.swing.JButton btn) {
         JOptionPane.showMessageDialog(this, "Database error: " + e.getMessage());
     }
     }//GEN-LAST:event_jButton1ActionPerformed
+
+    private void jLabel4MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel4MouseClicked
+  // 1. Ablihan ang verification frame
+    verification v = new verification();
+    v.setVisible(true);
+    v.pack();
+    v.setLocationRelativeTo(null); // Para tunga sa screen
+    
+    // 2. I-close ang Login frame
+    this.dispose();
+    }//GEN-LAST:event_jLabel4MouseClicked
 
     /**
      * @param args the command line arguments
